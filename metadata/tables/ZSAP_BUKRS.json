@@ -1,0 +1,11 @@
+{
+  "table": "ZSAP_BUKRS",
+  "source": "DD03L via runQuery",
+  "fields_used": [
+    "BUKRS",
+    "PRCTR",
+    "LTEXT",
+    "ZFGS",
+    "ZZGS"
+  ]
+}
