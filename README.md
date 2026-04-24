@@ -18,9 +18,11 @@
 
 1. 解压 `sap-report-automation-workflow-skill.zip`
 2. `git clone https://github.com/fr0ster/mcp-abap-adt.git && cd mcp-abap-adt && npm install && npm run build`
-3. `cp .env.example .env`，填入真实 SAP 连接信息
-4. `node scripts/setup.js` — 检查环境
-5. `node scripts/healthcheck.js` — 验证 SAP 连接
+3. **配置 SAP 连接**（二选一）：
+   - **交互式**：`node 脚本/write-config.js`，按提示输入 IP、实例号、系统标识、Router、账号、密码、客户端
+   - **手动**：`cp .env.example .env` 后编辑
+4. `node 脚本/setup.js` — 检查环境
+5. `node 脚本/healthcheck.js` — 验证 SAP 连接
 6. 在 Claude Code 中触发报表开发工作流
 
 ## 工作流阶段
@@ -32,6 +34,7 @@
 | S2.5 | `metadata/performance-estimate.md` | 主表 COUNT + 分页建议 |
 | S3 | `docs/tech-design.md` | 字段契约 + 关联 + WHERE |
 | S3.5 | `docs/fs-coverage.md` | FS 字段与代码逐项对齐 |
+| **S3.6** | `docs/deployment-config.md` | **开发包 / 请求号 / 模板确认** |
 | S4 | `abap/sources/*/...abap` | 按模板生成代码 |
 | S5 | 激活记录 | `syntaxCheck` + `activate` 通过 |
 | S5.5 | `docs/smoke-test.md` | 源码一致 / 执行探针 / ALV 列核对 |
