@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(zip *)",
+      "PowerShell($zip = Get-Item sap-report-automation-workflow-for-claude.zip; \"Size: $\($zip.Length\) bytes\"; \"Modified: $\($zip.LastWriteTime\)\"; \"\"; \"Contents:\"; Add-Type -Assembly System.IO.Compression.FileSystem; $reader = [System.IO.Compression.ZipFile]::OpenRead\($zip.FullName\); $reader.Entries | ForEach-Object { $_.FullName }; $reader.Dispose\(\))",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone *)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(unzip -q \"SAP NetWeaver 750_7 RFC SDK.zip\")",
+      "Bash(unzip -q nwrfc750P_7-70002726.zip)",
+      "Bash(node *)",
+      "Bash(npx patch-package *)"
+    ]
+  }
+}

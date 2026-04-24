@@ -1,0 +1,17 @@
+{
+  "table": "FAGLFLEXA",
+  "source": "DD03L via runQuery",
+  "fields_used": [
+    "RBUKRS",
+    "RYEAR",
+    "DOCNR",
+    "BUZEI",
+    "DOCLN",
+    "POPER",
+    "RACCT",
+    "PRCTR",
+    "TSL",
+    "HSL",
+    "DRCRK"
+  ]
+}

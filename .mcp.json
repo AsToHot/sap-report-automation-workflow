@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "abap-adt": {
+      "command": "node",
+      "args": [
+        "E:/ABAP工作流/mcp-launcher.js"
+      ]
+    }
+  }
+}
