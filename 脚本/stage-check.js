@@ -19,8 +19,8 @@ function readStageGate() {
   const text = fs.readFileSync(f, 'utf8');
   const map = {};
   for (const line of text.split('\n')) {
-    const m = line.match(/^(S[0-9.]+)=(.+?):\s*(.+)$/);
-    if (m) map[m[1]] = m[3].trim();
+    const m = line.match(/^(S[0-9.]+)=(.+?):\s*(.+)$/m);
+    if (m) map[m[1]] = m[3].trim().replace(/\r$/, '');
   }
   return map;
 }
