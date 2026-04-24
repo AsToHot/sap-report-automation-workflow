@@ -506,6 +506,18 @@ S5.5=smoke-test-passed: yes/no
 
 ## 迁移到其他环境
 
+### Claude Code 双方案选择
+
+Claude 端支持两种 MCP 实现，代理按用户网络环境自动选择：
+
+| 场景 | 推荐 MCP | 连接方式 | 启动器 |
+|------|---------|---------|--------|
+| 内网 + SAP Router | **fr0ster/mcp-abap-adt** | RFC (`SADT_REST_RFC_ENDPOINT`) | `mcp-launcher.js`（自动设置 `SAPNWRFC_HOME` + PATH） |
+| 公网 / 无 Router | mario-andreschak/mcp-abap-abap-adt-api | HTTP ADT (`/sap/bc/adt/`) | 直接 `node dist/index.js` |
+
+- **fr0ster 版安装**：`git clone https://github.com/fr0ster/mcp-abap-adt.git && npm install && npm run build`。工作目录需包含 `.env`（`SAP_CONNECTION_TYPE=rfc`、`SAP_ROUTER=/H/...`）和 `NW-RFC-SDK/`。
+- **自动检查**：复制 Skill 后先运行 `node scripts/setup.js` 检查环境，再运行 `node scripts/healthcheck.js` 验证连接。
+
 - **其他 Claude Code 用户**：复制本 Skill 整个目录到对方仓库的 `.claude/skills/sap-report-automation-workflow/`（或到 `~/.claude/skills/` 作为全局 Skill）。新环境首次触发时，**代理按阶段 0 自动**克隆并构建 MCP、合并 `settings.json`、收集 SAP 凭据、提示重启后 `healthcheck`——**不要求对方手动装 MCP**。RFC 备选仍需用户安装 NW RFC SDK。
 - **Cursor**：使用仓库内 `.cursor/skills/sap-report-automation-workflow/`，配置写入 `.cursor/mcp.json`。
 - **OpenClaw**：使用仓库内 `openclaw/skills/sap_report_automation_workflow/`，复制到 `~/.openclaw/skills/` 或工作区 skills 目录后重启 gateway / `openclaw skills list` 校验；MCP 侧仍由代理按阶段 0 自动安装 Node 版 server，在 OpenClaw/宿主侧注册同一入口（具体 MCP 配置方式以 OpenClaw 当前文档为准）。
