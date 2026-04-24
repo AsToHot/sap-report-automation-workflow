@@ -1,0 +1,19 @@
+{
+  "table": "SKA1",
+  "pull_strategy": "A-DD03L-serial",
+  "source": "runQuery: DD03L",
+  "count_check": {
+    "expected_count": 25,
+    "fetched_count": 25,
+    "matched": true
+  },
+  "key_fields": [
+    "MANDT",
+    "KTOPL",
+    "SAKNR"
+  ],
+  "important_fields_for_fs": [
+    "ZFKYH",
+    "ZYHZH"
+  ]
+}

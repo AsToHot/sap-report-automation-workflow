@@ -1,0 +1,18 @@
+{
+  "table": "ZFI032_DOC",
+  "pull_strategy": "A-DD03L-serial",
+  "source": "runQuery: DD03L",
+  "count_check": {
+    "expected_count": 19,
+    "fetched_count": 19,
+    "matched": true
+  },
+  "important_fields_for_fs": [
+    "BUKRS",
+    "BELNR",
+    "GJAHR",
+    "BANKSERIALNUMBER",
+    "ZCXFLAG",
+    "URID"
+  ]
+}

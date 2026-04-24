@@ -1,0 +1,15 @@
+{
+  "table": "BSEG",
+  "source": "DD03L via runQuery",
+  "fields_used": [
+    "BUKRS",
+    "BELNR",
+    "GJAHR",
+    "BUZEI",
+    "KOSTL",
+    "SGTXT",
+    "MATNR",
+    "LIFNR",
+    "KUNNR"
+  ]
+}

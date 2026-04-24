@@ -1,0 +1,20 @@
+{
+  "table": "CEPC",
+  "pull_strategy": "A-DD03L-serial",
+  "source": "runQuery: DD03L",
+  "count_check": {
+    "expected_count": 53,
+    "fetched_count": 53,
+    "matched": true
+  },
+  "key_fields": [
+    "MANDT",
+    "PRCTR",
+    "DATBI",
+    "KOKRS"
+  ],
+  "important_fields_for_fs": [
+    "KHINR",
+    "BUKRS"
+  ]
+}
