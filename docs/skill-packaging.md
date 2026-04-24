@@ -42,15 +42,12 @@ sap-report-automation-workflow/
 |------|---------|---------|
 | `mcp-abap-adt`（fr0ster 版） | 否 | `git clone + npm install + npm run build` |
 | `node-rfc` | 否 | `npm install`（mcp-abap-adt 依赖） |
-| SAP NW RFC SDK | **否**（SAP 版权） | 用户从 SAP Support Portal 下载并解压到 `NW-RFC-SDK/` |
+| SAP NW RFC SDK | **是**（已内置） | 包内包含 `NW-RFC-SDK/nwrfcsdk/` |
 | Node.js ≥ 22 | 否 | 用户自行安装 |
 
-### 为什么 NW-RFC-SDK 不打包？
+### NW-RFC-SDK 已内置
 
-SAP NW RFC SDK 受 SAP 许可协议约束，**禁止二次分发**。Skill 包提供：
-- 下载指引（SAP Support Portal → SAP NW RFC SDK 7.50）
-- 自动解压脚本（用户将 `.zip` 放到 `NW-RFC-SDK/` 后运行）
-- `mcp-launcher.js` 自动设置 `SAPNWRFC_HOME` 和 PATH
+本 Skill 包已包含已解压的 `NW-RFC-SDK/nwrfcsdk/`（约 50 MB）及原始 `.zip` 安装包，接收方无需再从 SAP Support Portal 下载。若需更新版本，可替换 `NW-RFC-SDK/` 下的文件。
 
 ## 开包即用流程
 

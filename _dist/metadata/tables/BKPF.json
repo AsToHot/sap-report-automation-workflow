@@ -1,0 +1,20 @@
+{
+  "table": "BKPF",
+  "source": "DD03L via runQuery",
+  "fields_used": [
+    "BUKRS",
+    "BELNR",
+    "GJAHR",
+    "MONAT",
+    "BUDAT",
+    "CPUDT",
+    "AEDAT",
+    "USNAM",
+    "XREVERSAL",
+    "BLART",
+    "BKTXT",
+    "WAERS",
+    "XBLNR",
+    "KURSF"
+  ]
+}

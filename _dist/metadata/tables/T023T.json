@@ -1,0 +1,17 @@
+{
+  "table": "T023T",
+  "pull_strategy": "A-DD03L-serial",
+  "source": "runQuery: DD03L",
+  "count_check": {
+    "expected_count": 5,
+    "fetched_count": 5,
+    "matched": true
+  },
+  "fields": [
+    "MANDT",
+    "SPRAS",
+    "MATKL",
+    "WGBEZ",
+    "WGBEZ60"
+  ]
+}
