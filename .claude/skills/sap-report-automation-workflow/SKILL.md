@@ -108,7 +108,7 @@ description: |
 - **MUST**：在同一次任务内串起 `克隆 → 构建 → 写 settings.json → 提示重启 → 再 healthcheck`。
 - **MUST NOT**：用占位符（`C:/path/to/...`、`your-sap-host`）冒充「已配置」；未通过 `healthcheck` 不得声称已连上 SAP。
 - **MUST NOT**：把 `git clone` / `npm install` / `npm run build` 作为「让用户去做的作业」列出，代理有 Shell 能力就**自己跑**。
-- **仅允许**向用户索要：`SAP_URL`、`SAP_USER`、`SAP_PASSWORD`、`SAP_CLIENT`、`SAP_LANGUAGE`、（可选）构建目录偏好。
+- **仅允许**向用户索要：`SAP_URL`、`SAP_USER`、`SAP_PASSWORD`、`SAP_CLIENT`、`SAP_LANGUAGE`、`SAP_ROUTER`（RFC 场景必填）、`SAP_CONNECTION_TYPE`（RFC 场景必填）、（可选）构建目录偏好。
 
 ### 0.1 探测（先判断再动手）
 
@@ -178,25 +178,49 @@ echo "ENTRY=$DST/dist/index.js"
 
 **规则**：
 
-- 若文件**不存在** → 直接生成，`mcpServers.ai-abap` 的 `args[0]` 填 0.2 得到的真实 `ENTRY` 绝对路径（Windows 用正斜杠或双反斜杠）。
+- 若文件**不存在** → 直接生成，`mcpServers.ai-abap` 的 `args[0]` 按连接类型选择：HTTP 场景填 `dist/index.js` 绝对路径；**RFC 场景必须填 `mcp-launcher.js` 绝对路径**（Windows 用正斜杠或双反斜杠）。
 - 若文件**已存在** → **合并**而非覆盖：读原 JSON → 仅追加/更新 `mcpServers.ai-abap` 条目 → 回写；保留其他服务器。
-- **密码等敏感字段先留空字符串**，再在 0.4 步由用户提供后再次合并，**切勿**把 `SAP_PASSWORD:"password"` 之类占位符写入文件。
+- **`env` 字段必须填入从 `.env` 读取的实际值**，**禁止空字符串**。代理在写 `settings.json` 前必须读取 `.env`（或用户提供的连接信息），将所有字段完整填入 `env`（含 `SAP_URL`、`SAP_USER`、`SAP_PASSWORD`、`SAP_CLIENT`、`SAP_LANGUAGE`、`SAP_CONNECTION_TYPE`、`SAP_ROUTER`），**禁止**留空、省略或用占位符。
 - **强烈建议**将含密码的 `settings.json` 写到**用户级**位置，项目仓库只保留 `settings.json.example`。若必须写到项目级，代理须主动把 `.claude/settings.json` 追加到 `.gitignore`。
 
-生成骨架（用户未给 env 前的状态）：
+生成骨架（**禁止空字符串；必须从 `.env` 读取实际值填入**）：
 
+**HTTP 场景**（无 SAP Router，直连 ADT REST）：
 ```json
 {
   "mcpServers": {
     "ai-abap": {
       "command": "node",
-      "args": ["<ENTRY 绝对路径>"],
+      "args": ["C:/Users/xxx/mcp-servers/mcp-abap-abap-adt-api/dist/index.js"],
       "env": {
-        "SAP_URL": "",
-        "SAP_USER": "",
-        "SAP_PASSWORD": "",
-        "SAP_CLIENT": "",
+        "SAP_URL": "https://sap-host:44300",
+        "SAP_USER": "ITL12",
+        "SAP_PASSWORD": "实际密码",
+        "SAP_CLIENT": "200",
         "SAP_LANGUAGE": "ZH",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+**RFC 场景**（内网 + SAP Router，**必须使用 `mcp-launcher.js`**）：
+```json
+{
+  "mcpServers": {
+    "ai-abap": {
+      "command": "node",
+      "args": ["E:/ABAP工作流/mcp-launcher.js"],
+      "env": {
+        "SAP_URL": "http://10.32.21.11:8000",
+        "SAP_USER": "ITL12",
+        "SAP_PASSWORD": "实际密码",
+        "SAP_CLIENT": "200",
+        "SAP_LANGUAGE": "ZH",
+        "SAP_CONNECTION_TYPE": "rfc",
+        "SAP_ROUTER": "/H/210.75.21.252",
         "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       },
       "disabled": false
@@ -239,7 +263,7 @@ echo "ENTRY=$DST/dist/index.js"
 ### 0.5 提示重启 → 再次 healthcheck（**自动重试**）
 
 - 明确告诉用户：**退出并重新启动 Claude Code**（或新开一个会话），以使 MCP 配置生效。
-- 重启完成后代理**主动**再调 `healthcheck`；失败最多 3 次自动重试，仍失败则输出**结构化诊断**（entry 路径是否存在、settings.json 路径、env 是否为空、`node <entry>` 直接启动的 stderr），再请用户判断。
+- 重启完成后代理**主动**再调 `healthcheck`；失败最多 3 次自动重试，仍失败则输出**结构化诊断**（entry 路径是否存在、settings.json 路径、env 字段是否完整（含 SAP_URL/USER/PASSWORD/CLIENT/LANGUAGE/CONNECTION_TYPE/ROUTER）、`node <entry>` 直接启动的 stderr），再请用户判断。
 
 ### 0.9 权限前置探测（新增，阶段 0 末尾强制）
 
@@ -285,8 +309,8 @@ echo "ENTRY=$DST/dist/index.js"
 ```
 [MCP] 未就绪 → 自动克隆 mcp-abap-abap-adt-api 到 %USERPROFILE%\mcp-servers
 [MCP] npm install / build 完成，入口：.../dist/index.js
-[MCP] 已写入 .claude/settings.json（密码字段待填）
-[MCP] 请提供 SAP_URL / USER / PASSWORD / CLIENT / LANGUAGE
+[MCP] 已写入 .claude/settings.json（所有字段已填入实际值）
+[MCP] 请提供 SAP_URL / USER / PASSWORD / CLIENT / LANGUAGE / ROUTER(RFC) / CONNECTION_TYPE
 [MCP] 请重启 Claude Code，完成后我会自动 healthcheck
 ```
 
