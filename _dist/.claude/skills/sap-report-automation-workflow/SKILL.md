@@ -71,14 +71,16 @@ description: |
 - `docs/tech-design.md`
 - `docs/template-mapping.md`
 - `docs/fs-coverage.md`
+- `docs/deployment-config.md`
 - `docs/stage-gate.md`
 
-并在 `docs/stage-gate.md` 中确认以下 4 项为已完成：
+并在 `docs/stage-gate.md` 中确认以下 5 项为已完成：
 
 - `S1=functional-spec-ready`
 - `S2=metadata-ready`
 - `S3=tech-design-ready`
 - `S3.5=fs-coverage-ready`
+- `S3.6=deployment-config-ready`
 
 若任一条件不满足：**必须停止**，先补齐产物；禁止进入阶段 4/5。
 
@@ -205,17 +207,34 @@ echo "ENTRY=$DST/dist/index.js"
 
 ### 0.4 收集 SAP 连接信息（**唯一**允许打断流程的环节）
 
-一次性向用户索要（缺啥问啥，不要每次只问一个字段）：
+代理必须一次性向用户索要全部连接信息（缺啥问啥，不要每次只问一个字段）。**支持两种输入方式**：
 
-```
-SAP_URL       例：https://sap.example.com:44300
-SAP_USER      开发用户
-SAP_PASSWORD  仅写入本机配置，不要提交 Git
-SAP_CLIENT    如 100 / 300 / 800
-SAP_LANGUAGE  默认 ZH
-```
+- **方式 A（推荐）**：用户直接在对话中给出信息 → 代理自动调用 `node scripts/write-config.js` 写入 `.env` 并合并 `settings.json`。
+- **方式 B**：用户手动编辑 `.env` → 代理读取验证，缺失项再追问。
 
-拿到后**立即**合并回 0.3 的 `settings.json`，不要再绕一圈。
+**必须收集的字段**：
+
+| 字段 | 说明 | 示例 |
+|------|------|------|
+| `SAP_URL` | SAP 应用服务器 IP/域名 + 端口 | `http://10.32.21.11:8000` |
+| `SAP_CLIENT` | 登录客户端 | `200` |
+| `SAP_USERNAME` | 开发账号 | `ITL12` |
+| `SAP_PASSWORD` | 开发密码 | `********` |
+| `SAP_LANGUAGE` | 登录语言，默认 `ZH` | `ZH` |
+| `SAP_SID` | 系统标识（用于传输请求命名、诊断） | `EE0` |
+| `SAP_SYSNR` | 实例编号（从端口 80XX 推导或用户给出） | `00` |
+| `SAP_ROUTER` | SAP Router 字符串（RFC 内网场景必填） | `/H/210.75.21.252` |
+| `SAP_CONNECTION_TYPE` | `rfc`（推荐，支持 Router）或 `http` | `rfc` |
+
+**自动推导规则**：
+- 若 URL 为 `http://host:80XX`，默认 `SAP_SYSNR = XX`；用户显式给出时以用户为准。
+- 若 `SAP_CONNECTION_TYPE = rfc` 且存在 `NW-RFC-SDK/nwrfcsdk/lib/sapnwrfc.dll`，代理**必须**配置 `mcp-launcher.js` 启动器（设置 `SAPNWRFC_HOME` + PATH），而非裸调 `dist/index.js`。
+
+**写入动作（代理执行，不交给用户）**：
+
+1. 生成 `.env`（含 `SAP_SID`、`SAP_SYSNR`、`SAP_ROUTER`）。
+2. 若项目级 `.claude/settings.json` 存在 → 合并 `mcpServers` 条目；若不存在 → 询问用户是否写入用户级 `%USERPROFILE%/.claude/settings.json`。
+3. 写入后调用 `node scripts/setup.js` 做一次性校验，输出诊断。
 
 ### 0.5 提示重启 → 再次 healthcheck（**自动重试**）
 
@@ -357,12 +376,14 @@ abap/
 
 ## 阶段 4：按模板创建程序（契约驱动，非创意驱动）
 
-1. **先打开** `docs/tech-design.md`（字段契约）与涉及的 `metadata/tables/*.json`，再动笔；**Open SQL、内表定义、LOOP 中使用的字段名**须与之一致。
-2. 使用项目既有报表模板（用户提供路径时优先）仅作**骨架**；**业务 SELECT/JOIN/WHERE** 不得与契约和元数据冲突。
-3. **模板结构强约束（新增）**：若参考程序是"主程序 + INCLUDE 分层"（如 `xxxT01`/`xxxSEL`/`xxxF01`），新程序必须保持同等分层，不允许退化为单文件大程序（除非用户明确要求简化）。
-4. 生成前必须先写 `docs/template-mapping.md`，至少列出：`参考对象`、`新对象`、`对应 INCLUDE 清单`、`保留/替换说明`，以便审计"确实参照了模板格式"。
-5. **Eclipse ADT 侧同类操作在 MCP 中的顺序**（概念上）：`findObjectPath` / `createObject` → `lock` → `setObjectSource` → `syntaxCheckCode`。
-6. 传输：`transport` / `transportReference` 按 MCP 工具要求传入。
+1. **前置检查**：进入阶段 4 前，代理必须确认 `docs/deployment-config.md` 已存在且包含：目标包、传输请求（非 `$TMP` 时）、参考模板路径、新程序名。**禁止**在未确认开发包/请求号的状态下直接调用 `createObject`。
+2. **先打开** `docs/tech-design.md`（字段契约）与涉及的 `metadata/tables/*.json`，再动笔；**Open SQL、内表定义、LOOP 中使用的字段名**须与之一致。
+3. **模板来源**：以阶段 3.6 确认的模板为骨架（用户指定模板 或 Skill 默认模板 `templates/reference/ZSAP_FI244/`）；**业务 SELECT/JOIN/WHERE** 不得与契约和元数据冲突。
+4. **模板结构强约束**：若参考程序是"主程序 + INCLUDE 分层"（如 `xxxT01`/`xxxSEL`/`xxxF01`），新程序必须保持同等分层，不允许退化为单文件大程序（除非用户明确要求简化）。
+5. 生成前必须先写 `docs/template-mapping.md`，至少列出：`参考对象`、`新对象`、`对应 INCLUDE 清单`、`保留/替换说明`，以便审计"确实参照了模板格式"。
+6. **Eclipse ADT 侧同类操作在 MCP 中的顺序**（概念上）：`findObjectPath` / `createObject` → `lock` → `setObjectSource` → `syntaxCheckCode`。
+   - `createObject` 时按 `deployment-config.md` 传入 `devclass`（包）与 `transport`（请求号）；若包为 `$TMP`，传输请求字段留空或按 MCP schema 要求处理。
+7. 传输：`transport` / `transportReference` 按 MCP 工具要求传入。
 
 ## FS 对齐审查机制（新增，阶段 3.5，未通过禁止阶段 4）
 
@@ -380,6 +401,53 @@ abap/
 2. `状态=Done` 必须给出代码落点（主程序或 INCLUDE 名称）；`状态=TBD` 必须给原因与处理计划。
 3. 阶段 5 前必须做一次"反查"：从最终代码（SELECT 列、WHERE、ALV 列）回填到 `fs-coverage.md`，确认无"代码有但 FS 无"与"FS 有但代码无"。
 
+## 阶段 3.6：开发包、传输请求与程序模板确认（新增，未通过禁止阶段 4）
+
+在获得 `fs-coverage.md` 对齐确认后、生成代码前，代理必须向用户确认以下三项，并落盘 `docs/deployment-config.md`：
+
+### 3.6.1 开发包（Package）
+
+- **询问用户**：目标开发包名称（如 `ZGD01`、`ZFI01`）。
+- **若用户无法提供或留空**：默认使用 **`$TMP`（本地包）**，此时**无需传输请求**。
+- **若用户提供了开发包**：代理须通过 `runQuery` 或 `searchObject` 验证该包在系统中是否存在、用户是否有写入权限。
+  - 验证失败 → 回退到 `$TMP` 或请用户换包，记录到 `docs/deployment-config.md`。
+
+### 3.6.2 传输请求（Transport Request）——仅非本地包时需要
+
+- **若包 = `$TMP`**：跳过本节，传输请求字段留空。
+- **若包 ≠ `$TMP`**：询问用户是否已有可用请求号。
+  - **用户有请求号**：记录到 `docs/deployment-config.md`，代理在后续 `createObject`/`lock` 时按 MCP 要求传入。
+  - **用户无请求号或要求新建**：代理通过 MCP 或引导用户在 SAP GUI 中创建传输请求。
+    - **命名规则**：`ABAP_<功能名称>_<开发账号>_<YYYYMMDD>`
+    - 例：功能名称为"序时账"、账号 `ITL12`、日期 `20260424` → `ABAP_序时账_ITL12_20260424`
+    - 若系统不支持中文描述，转拼音或英文缩写，如 `ABAP_Journal_ITL12_20260424`。
+    - 创建后记录请求号到 `docs/deployment-config.md`。
+
+### 3.6.3 程序模板选择
+
+- **询问用户**：是否有现有报表程序作为模板参考（提供程序名，如 `ZSAP_FI244`）。
+  - **用户提供了模板**：代理通过 `getObjectSource` 拉取该程序源码（含全部 INCLUDE），保存到 `templates/reference/<程序名>/`，并在 `docs/template-mapping.md` 中列出模板与新程序的 INCLUDE 对应关系。
+  - **用户未提供模板**：使用 Skill 包内置的**默认模板** `abap/sources/ZSAP_FI244/`（标准主程序 + `T01`/`SEL`/`F01` 三层 INCLUDE 结构）。代理须将该目录复制到 `templates/reference/ZSAP_FI244/` 作为本次参考基线。
+- **模板结构强约束**：无论使用用户模板还是默认模板，新程序必须保持同等的 INCLUDE 分层结构（`xxxT01`、`xxxSEL`、`xxxF01`），不得退化为单文件大程序（除非用户明确要求简化）。
+
+### 3.6.4 输出产物
+
+`docs/deployment-config.md` 至少包含：
+
+```markdown
+## Deployment Config
+
+| 项 | 值 | 备注 |
+|---|---|---|
+| 目标包 | $TMP 或 ZGD01 | |
+| 传输请求 | 空 或 K9XXXXXX | 本地包时为空 |
+| 参考模板 | ZSAP_FI244 或用户指定 | |
+| 新程序名 | ZSAP_XXXX | 用户指定 |
+| 创建日期 | YYYY-MM-DD | |
+```
+
+**硬规则**：`docs/deployment-config.md` 未生成或开发包/请求号状态不明 → **禁止**进入阶段 4。
+
 ## 阶段门禁产物验证（新增）
 
 每阶段完成后必须落盘 `docs/stage-gate.md` 并打勾，未打勾禁止进入下一阶段。
@@ -387,6 +455,7 @@ abap/
 - 阶段 1 门禁：`spec/functional-spec-ai.md` 存在且包含选择条件/输出列/透明表清单。
 - 阶段 2 门禁：每张透明表对应 `metadata/tables/<TAB>.json` 或 `_errors.md` 有完整补救记录；`metadata/performance-estimate.md` 已生成（阶段 2.5）。
 - 阶段 3 门禁：`docs/tech-design.md` + `docs/fs-coverage.md` + `docs/template-mapping.md` 完整。
+- 阶段 3.6 门禁：`docs/deployment-config.md` 已生成，开发包/请求号/模板状态明确。
 - 阶段 4 门禁：代码结构与模板映射一致（含 INCLUDE 清单）。
 - 阶段 5 门禁：`syntaxCheck` 通过、激活结果记录（成功或达到重试上限）。
 - 阶段 5.5 门禁：`docs/smoke-test.md` 已生成且通过最低验证。
@@ -400,6 +469,7 @@ S2=metadata-ready: yes/no
 S2.5=performance-estimate-ready: yes/no
 S3=tech-design-ready: yes/no
 S3.5=fs-coverage-ready: yes/no
+S3.6=deployment-config-ready: yes/no
 S4=code-generated: yes/no
 S5=activated: yes/no
 S5.5=smoke-test-passed: yes/no
@@ -481,6 +551,7 @@ S5.5=smoke-test-passed: yes/no
 
 ```
 - [ ] 阶段 0：ai-abap MCP 自动安装完成（入口路径真实存在）
+- [ ] 阶段 0：.env 已生成且包含真实 SAP 连接信息（URL/CLIENT/USER/PASSWORD/SID/SYSNR/ROUTER/TYPE）
 - [ ] 阶段 0：.claude/settings.json 或用户级 settings.json 的 ai-abap 条目已就绪（无占位符）
 - [ ] 阶段 0：healthcheck 返回成功（重启后实测）
 - [ ] 阶段 0.9：权限前置探测通过（S_DEVELOP / 包权限 / 传输请求）
@@ -490,8 +561,9 @@ S5.5=smoke-test-passed: yes/no
 - [ ] metadata/performance-estimate.md 已生成（主表 COUNT + 量级分类 + 分页建议）
 - [ ] tech-design.md 含「字段契约」且与 metadata 一致
 - [ ] fs-coverage.md 已覆盖 FS 全量字段（含 Done/TBD）
+- [ ] deployment-config.md 已生成（包/请求号/模板/新程序名）
 - [ ] template-mapping.md 已证明新程序结构对齐参考模板（含 INCLUDE）
-- [ ] stage-gate.md 每阶段门禁已打勾（含 S0/S2.5/S5.5）
+- [ ] stage-gate.md 每阶段门禁已打勾（含 S0/S2.5/S3.6/S5.5）
 - [ ] Open SQL / 内表字段均可追溯到契约与 metadata（无凭空字段）
 - [ ] 源码已 syntaxCheckCode
 - [ ] 激活成功或达到重试上限并记录原因
