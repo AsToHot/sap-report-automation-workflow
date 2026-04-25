@@ -20,11 +20,13 @@ const entries = [
   '.claude/skills/sap-report-automation-workflow',
   // Scripts
   '脚本',
+  '脚本/write-config.js',
   // Templates & examples
   'spec',
   'docs',
   'metadata',
   'abap',
+  'templates/reference',
   // Config & launcher
   '.env.example',
   '.mcp.json',

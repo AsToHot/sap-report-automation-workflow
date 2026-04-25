@@ -1,7 +1,7 @@
 {
   "name": "sap-report-automation-workflow-skill",
   "version": "1.0.0",
-  "builtAt": "2026-04-24T13:02:58.264Z",
+  "builtAt": "2026-04-24T13:28:49.774Z",
   "includes": {
     "skillDocs": true,
     "scripts": true,

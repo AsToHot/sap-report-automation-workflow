@@ -52,10 +52,12 @@ sap-report-automation-workflow/
 ## 开包即用流程
 
 1. **解压 Skill 包**到工作目录
-2. **复制 `.env.example` → `.env`**，填入真实 SAP 连接信息
-3. **放置 NW-RFC-SDK**：下载 `nwrfc750P_X-XXXXXXXX.zip`，解压到 `NW-RFC-SDK/`
-4. **运行 `node scripts/setup.js`**：检查环境是否就绪
-5. **运行 `node scripts/healthcheck.js`**：验证 MCP + SAP 连接
+2. **构建 MCP**：`git clone https://github.com/fr0ster/mcp-abap-adt.git && cd mcp-abap-adt && npm install && npm run build`
+3. **配置 SAP 连接**（二选一）：
+   - **交互式**（推荐）：`node 脚本/write-config.js`，按提示输入 IP、实例号、系统标识(SID)、Router、账号、密码、客户端
+   - **手动**：`cp .env.example .env` 后编辑
+4. **运行 `node 脚本/setup.js`**：检查环境是否就绪
+5. **运行 `node 脚本/healthcheck.js`**：验证 MCP + SAP 连接
 6. **开始工作流**：按 SKILL.md 的阶段 1→5 执行
 
 ## 针对 Claude Code 的 MCP 注册
@@ -104,5 +106,5 @@ npm run build
 目标机器执行：
 1. `git clone https://github.com/fr0ster/mcp-abap-adt.git && cd mcp-abap-adt && npm install && npm run build`
 2. 下载 NW-RFC-SDK 并解压
-3. `cp .env.example .env` 并填写
+3. `node 脚本/write-config.js`（交互式配置）或 `cp .env.example .env` 手动填写
 4. `node scripts/setup.js && node scripts/healthcheck.js`
