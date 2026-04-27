@@ -1,0 +1,88 @@
+{
+  "tabname": "ZSAP_BUKRS",
+  "fetched_count": 8,
+  "expected_count": 8,
+  "matched": true,
+  "fields": [
+    {
+      "fieldname": "MANDT",
+      "position": "0001",
+      "keyflag": "X",
+      "rollname": "MANDT",
+      "datatype": "CLNT",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Client"
+    },
+    {
+      "fieldname": "BUKRS",
+      "position": "0002",
+      "keyflag": "X",
+      "rollname": "ZE_BUKRS",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": ""
+    },
+    {
+      "fieldname": "PRCTR",
+      "position": "0003",
+      "keyflag": "",
+      "rollname": "PRCTR",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Profit Center"
+    },
+    {
+      "fieldname": "LTEXT",
+      "position": "0004",
+      "keyflag": "",
+      "rollname": "LTEXT",
+      "datatype": "CHAR",
+      "leng": "000040",
+      "decimals": "000000",
+      "fieldtext": "Long Text"
+    },
+    {
+      "fieldname": "ZFGS",
+      "position": "0005",
+      "keyflag": "",
+      "rollname": "ZE_FGSBS",
+      "datatype": "CHAR",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": ""
+    },
+    {
+      "fieldname": "ZZGS",
+      "position": "0006",
+      "keyflag": "",
+      "rollname": "BUKRS",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": "Company Code"
+    },
+    {
+      "fieldname": "BUTXT",
+      "position": "0007",
+      "keyflag": "",
+      "rollname": "BUTXT",
+      "datatype": "CHAR",
+      "leng": "000025",
+      "decimals": "000000",
+      "fieldtext": "Name of Company Code or Company"
+    },
+    {
+      "fieldname": "ZSYS",
+      "position": "0008",
+      "keyflag": "",
+      "rollname": "ZE_SYS",
+      "datatype": "CHAR",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": ""
+    }
+  ]
+}

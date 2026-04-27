@@ -1,0 +1,48 @@
+{
+  "tabname": "TFKBT",
+  "fetched_count": 4,
+  "expected_count": 4,
+  "matched": true,
+  "fields": [
+    {
+      "fieldname": "MANDT",
+      "position": "0001",
+      "keyflag": "X",
+      "rollname": "MANDT",
+      "datatype": "CLNT",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Client"
+    },
+    {
+      "fieldname": "SPRAS",
+      "position": "0002",
+      "keyflag": "X",
+      "rollname": "SPRAS",
+      "datatype": "LANG",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": "Language Key"
+    },
+    {
+      "fieldname": "FKBER",
+      "position": "0003",
+      "keyflag": "X",
+      "rollname": "FKBER",
+      "datatype": "CHAR",
+      "leng": "000016",
+      "decimals": "000000",
+      "fieldtext": "Functional Area"
+    },
+    {
+      "fieldname": "FKBTX",
+      "position": "0004",
+      "keyflag": "",
+      "rollname": "FKBTX",
+      "datatype": "CHAR",
+      "leng": "000025",
+      "decimals": "000000",
+      "fieldtext": "Name of the functional area"
+    }
+  ]
+}
