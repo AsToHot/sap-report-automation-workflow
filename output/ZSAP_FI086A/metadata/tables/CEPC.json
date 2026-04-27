@@ -1,0 +1,528 @@
+{
+  "tabname": "CEPC",
+  "fetched_count": 52,
+  "expected_count": 52,
+  "matched": true,
+  "fields": [
+    {
+      "fieldname": "MANDT",
+      "position": "0001",
+      "keyflag": "X",
+      "rollname": "MANDT",
+      "datatype": "CLNT",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Client"
+    },
+    {
+      "fieldname": "PRCTR",
+      "position": "0002",
+      "keyflag": "X",
+      "rollname": "PRCTR",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Profit Center"
+    },
+    {
+      "fieldname": "DATBI",
+      "position": "0003",
+      "keyflag": "X",
+      "rollname": "DATBI",
+      "datatype": "DATS",
+      "leng": "000008",
+      "decimals": "000000",
+      "fieldtext": "Valid To Date"
+    },
+    {
+      "fieldname": "KOKRS",
+      "position": "0004",
+      "keyflag": "X",
+      "rollname": "KOKRS",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": "Controlling Area"
+    },
+    {
+      "fieldname": "DATAB",
+      "position": "0005",
+      "keyflag": "",
+      "rollname": "DATAB",
+      "datatype": "DATS",
+      "leng": "000008",
+      "decimals": "000000",
+      "fieldtext": "Valid-From Date"
+    },
+    {
+      "fieldname": "ERSDA",
+      "position": "0006",
+      "keyflag": "",
+      "rollname": "ERFDT",
+      "datatype": "DATS",
+      "leng": "000008",
+      "decimals": "000000",
+      "fieldtext": "Created on"
+    },
+    {
+      "fieldname": "USNAM",
+      "position": "0007",
+      "keyflag": "",
+      "rollname": "ERFNM",
+      "datatype": "CHAR",
+      "leng": "000012",
+      "decimals": "000000",
+      "fieldtext": "Entered By"
+    },
+    {
+      "fieldname": "MERKMAL",
+      "position": "0008",
+      "keyflag": "",
+      "rollname": "FDMERKMAL",
+      "datatype": "CHAR",
+      "leng": "000030",
+      "decimals": "000000",
+      "fieldtext": "Field name of CO-PA characteristic"
+    },
+    {
+      "fieldname": "ABTEI",
+      "position": "0009",
+      "keyflag": "",
+      "rollname": "ABTEIL",
+      "datatype": "CHAR",
+      "leng": "000012",
+      "decimals": "000000",
+      "fieldtext": "Department"
+    },
+    {
+      "fieldname": "VERAK",
+      "position": "0010",
+      "keyflag": "",
+      "rollname": "VERAPC",
+      "datatype": "CHAR",
+      "leng": "000020",
+      "decimals": "000000",
+      "fieldtext": "Person Responsible for Profit Center"
+    },
+    {
+      "fieldname": "VERAK_USER",
+      "position": "0011",
+      "keyflag": "",
+      "rollname": "VERAPC_USER",
+      "datatype": "CHAR",
+      "leng": "000012",
+      "decimals": "000000",
+      "fieldtext": "User Responsible for the Profit Center"
+    },
+    {
+      "fieldname": "WAERS",
+      "position": "0012",
+      "keyflag": "",
+      "rollname": "WAERS",
+      "datatype": "CUKY",
+      "leng": "000005",
+      "decimals": "000000",
+      "fieldtext": "Currency Key"
+    },
+    {
+      "fieldname": "NPRCTR",
+      "position": "0013",
+      "keyflag": "",
+      "rollname": "NPRCTR",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Successor profit center"
+    },
+    {
+      "fieldname": "LAND1",
+      "position": "0014",
+      "keyflag": "",
+      "rollname": "LAND1",
+      "datatype": "CHAR",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Country Key"
+    },
+    {
+      "fieldname": "ANRED",
+      "position": "0015",
+      "keyflag": "",
+      "rollname": "ANRED",
+      "datatype": "CHAR",
+      "leng": "000015",
+      "decimals": "000000",
+      "fieldtext": "Title"
+    },
+    {
+      "fieldname": "NAME1",
+      "position": "0016",
+      "keyflag": "",
+      "rollname": "NAME1_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "Name 1"
+    },
+    {
+      "fieldname": "NAME2",
+      "position": "0017",
+      "keyflag": "",
+      "rollname": "NAME2_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "Name 2"
+    },
+    {
+      "fieldname": "NAME3",
+      "position": "0018",
+      "keyflag": "",
+      "rollname": "NAME3_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "Name 3"
+    },
+    {
+      "fieldname": "NAME4",
+      "position": "0019",
+      "keyflag": "",
+      "rollname": "NAME4_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "Name 4"
+    },
+    {
+      "fieldname": "ORT01",
+      "position": "0020",
+      "keyflag": "",
+      "rollname": "ORT01_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "City"
+    },
+    {
+      "fieldname": "ORT02",
+      "position": "0021",
+      "keyflag": "",
+      "rollname": "ORT02_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "District"
+    },
+    {
+      "fieldname": "STRAS",
+      "position": "0022",
+      "keyflag": "",
+      "rollname": "STRAS_GP",
+      "datatype": "CHAR",
+      "leng": "000035",
+      "decimals": "000000",
+      "fieldtext": "Street and House Number"
+    },
+    {
+      "fieldname": "PFACH",
+      "position": "0023",
+      "keyflag": "",
+      "rollname": "PFACH",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "PO Box"
+    },
+    {
+      "fieldname": "PSTLZ",
+      "position": "0024",
+      "keyflag": "",
+      "rollname": "PSTLZ",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Postal Code"
+    },
+    {
+      "fieldname": "PSTL2",
+      "position": "0025",
+      "keyflag": "",
+      "rollname": "PSTL2",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "P.O. Box Postal Code"
+    },
+    {
+      "fieldname": "SPRAS",
+      "position": "0026",
+      "keyflag": "",
+      "rollname": "SPRAS",
+      "datatype": "LANG",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": "Language Key"
+    },
+    {
+      "fieldname": "TELBX",
+      "position": "0027",
+      "keyflag": "",
+      "rollname": "TELBX",
+      "datatype": "CHAR",
+      "leng": "000015",
+      "decimals": "000000",
+      "fieldtext": "Telebox Number"
+    },
+    {
+      "fieldname": "TELF1",
+      "position": "0028",
+      "keyflag": "",
+      "rollname": "TELF1",
+      "datatype": "CHAR",
+      "leng": "000016",
+      "decimals": "000000",
+      "fieldtext": "First telephone number"
+    },
+    {
+      "fieldname": "TELF2",
+      "position": "0029",
+      "keyflag": "",
+      "rollname": "TELF2",
+      "datatype": "CHAR",
+      "leng": "000016",
+      "decimals": "000000",
+      "fieldtext": "Second telephone number"
+    },
+    {
+      "fieldname": "TELFX",
+      "position": "0030",
+      "keyflag": "",
+      "rollname": "TELFX",
+      "datatype": "CHAR",
+      "leng": "000031",
+      "decimals": "000000",
+      "fieldtext": "Fax Number"
+    },
+    {
+      "fieldname": "TELTX",
+      "position": "0031",
+      "keyflag": "",
+      "rollname": "TELTX",
+      "datatype": "CHAR",
+      "leng": "000030",
+      "decimals": "000000",
+      "fieldtext": "Teletex Number"
+    },
+    {
+      "fieldname": "TELX1",
+      "position": "0032",
+      "keyflag": "",
+      "rollname": "TELX1",
+      "datatype": "CHAR",
+      "leng": "000030",
+      "decimals": "000000",
+      "fieldtext": "Telex Number"
+    },
+    {
+      "fieldname": "DATLT",
+      "position": "0033",
+      "keyflag": "",
+      "rollname": "DATLT",
+      "datatype": "CHAR",
+      "leng": "000014",
+      "decimals": "000000",
+      "fieldtext": "Data communication line no."
+    },
+    {
+      "fieldname": "DRNAM",
+      "position": "0034",
+      "keyflag": "",
+      "rollname": "PCDNAM",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": "Printer name for profit center"
+    },
+    {
+      "fieldname": "KHINR",
+      "position": "0035",
+      "keyflag": "",
+      "rollname": "PHINR",
+      "datatype": "CHAR",
+      "leng": "000012",
+      "decimals": "000000",
+      "fieldtext": "Profit center area"
+    },
+    {
+      "fieldname": "BUKRS",
+      "position": "0036",
+      "keyflag": "",
+      "rollname": "BUKRS",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": "Company Code"
+    },
+    {
+      "fieldname": "VNAME",
+      "position": "0037",
+      "keyflag": "",
+      "rollname": "JV_NAME",
+      "datatype": "CHAR",
+      "leng": "000006",
+      "decimals": "000000",
+      "fieldtext": "Joint Venture"
+    },
+    {
+      "fieldname": "RECID",
+      "position": "0038",
+      "keyflag": "",
+      "rollname": "JV_RECIND",
+      "datatype": "CHAR",
+      "leng": "000002",
+      "decimals": "000000",
+      "fieldtext": "Recovery Indicator"
+    },
+    {
+      "fieldname": "ETYPE",
+      "position": "0039",
+      "keyflag": "",
+      "rollname": "JV_ETYPE",
+      "datatype": "CHAR",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Equity type"
+    },
+    {
+      "fieldname": "TXJCD",
+      "position": "0040",
+      "keyflag": "",
+      "rollname": "TXJCD",
+      "datatype": "CHAR",
+      "leng": "000015",
+      "decimals": "000000",
+      "fieldtext": "Tax Jurisdiction"
+    },
+    {
+      "fieldname": "REGIO",
+      "position": "0041",
+      "keyflag": "",
+      "rollname": "REGIO",
+      "datatype": "CHAR",
+      "leng": "000003",
+      "decimals": "000000",
+      "fieldtext": "Region (State, Province, County)"
+    },
+    {
+      "fieldname": "KVEWE",
+      "position": "0042",
+      "keyflag": "",
+      "rollname": "KVEWE",
+      "datatype": "CHAR",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": "Usage of the condition table"
+    },
+    {
+      "fieldname": "KAPPL",
+      "position": "0043",
+      "keyflag": "",
+      "rollname": "KAPPL",
+      "datatype": "CHAR",
+      "leng": "000002",
+      "decimals": "000000",
+      "fieldtext": "Application"
+    },
+    {
+      "fieldname": "KALSM",
+      "position": "0044",
+      "keyflag": "",
+      "rollname": "KALSM_D",
+      "datatype": "CHAR",
+      "leng": "000006",
+      "decimals": "000000",
+      "fieldtext": "Procedure (Pricing, Output Control, Acct. Det., Costing,...)"
+    },
+    {
+      "fieldname": "LOGSYSTEM",
+      "position": "0045",
+      "keyflag": "",
+      "rollname": "LOGSYSTEM",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Logical System"
+    },
+    {
+      "fieldname": "LOCK_IND",
+      "position": "0046",
+      "keyflag": "",
+      "rollname": "LOCK_IND",
+      "datatype": "CHAR",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": "Lock indicator"
+    },
+    {
+      "fieldname": "PCA_TEMPLATE",
+      "position": "0047",
+      "keyflag": "",
+      "rollname": "PCA_TEMPLATE",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Template for Formula Planning in Profit Centers"
+    },
+    {
+      "fieldname": "SEGMENT",
+      "position": "0048",
+      "keyflag": "",
+      "rollname": "FB_SEGMENT",
+      "datatype": "CHAR",
+      "leng": "000010",
+      "decimals": "000000",
+      "fieldtext": "Segment for Segmental Reporting"
+    },
+    {
+      "fieldname": "ZFUNC",
+      "position": "0049",
+      "keyflag": "",
+      "rollname": "ZE_FUNC",
+      "datatype": "CHAR",
+      "leng": "000001",
+      "decimals": "000000",
+      "fieldtext": ""
+    },
+    {
+      "fieldname": "ZCHANNEL",
+      "position": "0050",
+      "keyflag": "",
+      "rollname": "ZE_CHANNEL",
+      "datatype": "CHAR",
+      "leng": "000002",
+      "decimals": "000000",
+      "fieldtext": ""
+    },
+    {
+      "fieldname": "ZGRP",
+      "position": "0051",
+      "keyflag": "",
+      "rollname": "ZE_RESP_GRP",
+      "datatype": "CHAR",
+      "leng": "000012",
+      "decimals": "000000",
+      "fieldtext": ""
+    },
+    {
+      "fieldname": "ZBRAND",
+      "position": "0052",
+      "keyflag": "",
+      "rollname": "GSBER",
+      "datatype": "CHAR",
+      "leng": "000004",
+      "decimals": "000000",
+      "fieldtext": "Business Area"
+    }
+  ]
+}
