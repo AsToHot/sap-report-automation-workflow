@@ -1,0 +1,12 @@
+{
+  "tabname": "TFKBT",
+  "expected_count": 4,
+  "fetched_count": 4,
+  "matched": true,
+  "fields": [
+    {"fieldname": "MANDT", "position": 1, "keyflag": "X", "rollname": "MANDT", "datatype": "CLNT", "leng": 3, "decimals": 0},
+    {"fieldname": "SPRAS", "position": 2, "keyflag": "X", "rollname": "SPRAS", "datatype": "LANG", "leng": 1, "decimals": 0},
+    {"fieldname": "FKBER", "position": 3, "keyflag": "X", "rollname": "FKBER", "datatype": "CHAR", "leng": 16, "decimals": 0},
+    {"fieldname": "FKBTX", "position": 4, "keyflag": "", "rollname": "FKBTX", "datatype": "CHAR", "leng": 25, "decimals": 0}
+  ]
+}
