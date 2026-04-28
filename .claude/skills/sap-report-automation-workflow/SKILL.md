@@ -94,6 +94,12 @@ description: |
 - `activateByName`
 - `activateObjects`
 
+**新增：部署前禁止项**
+
+- **禁止**在未通过 5.0 程序名存在性检查前调用 `scripts/deploy_rfc.js` 或任何 MCP 写操作。
+- **禁止**将脚本中的 `process.exit(1)`（程序已存在时的终止行为）改为 `console.log` 警告并继续执行。
+- **禁止**代理擅自修改程序名（如在末尾追加 `A`/`1`）来绕过已存在检查。
+
 违反上述约束视为流程错误，代理必须在会话中显式承认并回退到缺失阶段补齐。
 
 ---
@@ -184,7 +190,7 @@ echo "ENTRY=$(pwd)/dist/index.js"
 }
 ```
 
-> **关键认知**：`SAP_URL` 必须填 `http://localhost:9876`（**不是** SAP 真实地址）。MCP 发送的 HTTP ADT REST 请求先到本地 `rfc-proxy-server.js`，再由代理通过 `node-rfc` → `SADT_REST_RFC_ENDPOINT` 转发到 SAP。真实 SAP 地址（`http://10.32.21.11:8000`）和凭据由代理从 `.env` 读取，**不要**填到 `.mcp.json` 中。
+> **关键认知**：`SAP_URL` 必须填 `http://localhost:9876`（**不是** SAP 真实地址）。MCP 发送的 HTTP ADT REST 请求先到本地 `rfc-proxy-server.js`，再由代理通过 `node-rfc` → `SADT_REST_RFC_ENDPOINT` 转发到 SAP。真实 SAP 地址（`http://<your-sap-host>:8000`）和凭据由代理从 `.env` 读取，**不要**填到 `.mcp.json` 中。
 >
 > `SAPNWRFC_HOME` 和 `PATH` 在 `.mcp.json` 中必须设置，确保 MCP 子进程能加载 `sapnwrfc.dll`（代理启动时会在进程内设置这些变量）。
 
@@ -192,21 +198,21 @@ echo "ENTRY=$(pwd)/dist/index.js"
 
 代理必须一次性向用户索要全部连接信息（缺啥问啥，不要每次只问一个字段）。**支持两种输入方式**：
 
-- **方式 A（推荐）**：用户直接在对话中给出信息 → 代理自动调用 `node scripts/write-config.js` 写入 `.env` 并合并 `.mcp.json`。
+- **方式 A（推荐）**：用户直接在对话中给出信息 → 代理使用 Write 工具直接生成 `.env`（按下方字段清单）并合并 `.mcp.json`。
 - **方式 B**：用户手动编辑 `.env` → 代理读取验证，缺失项再追问。
 
 **必须收集的字段**：
 
 | 字段 | 说明 | 示例 |
 |------|------|------|
-| `SAP_URL` | SAP 应用服务器 IP/域名 + 端口 | `http://10.32.21.11:8000` |
+| `SAP_URL` | SAP 应用服务器 IP/域名 + 端口 | `http://<your-sap-host>:8000` |
 | `SAP_CLIENT` | 登录客户端 | `200` |
-| `SAP_USERNAME` | 开发账号 | `ITL12` |
+| `SAP_USERNAME` | 开发账号 | `<username>` |
 | `SAP_PASSWORD` | 开发密码 | `********` |
 | `SAP_LANGUAGE` | 登录语言，默认 `ZH` | `ZH` |
 | `SAP_SID` | 系统标识（用于传输请求命名、诊断） | `EE0` |
 | `SAP_SYSNR` | 实例编号（从端口 80XX 推导或用户给出） | `00` |
-| `SAP_ROUTER` | SAP Router 字符串（RFC 内网场景必填） | `/H/210.75.21.252` |
+| `SAP_ROUTER` | SAP Router 字符串（RFC 内网场景必填） | `<router-string>` |
 | `SAP_CONNECTION_TYPE` | `rfc`（推荐，支持 Router）或 `http` | `rfc` |
 
 **自动推导规则**：
@@ -221,7 +227,7 @@ echo "ENTRY=$(pwd)/dist/index.js"
 
 ### 0.4.1 RFC 连接稳定性指南（Windows 必看；内网 + SAP Router 场景）
 
-本 Skill 当前最大的稳定性痛点是 **RFC 连接报错**。以下方案是从多次实战中固化下来的**唯一正确路径**；任何偏离都会导致 `node-rfc` 加载失败或连接间歇性中断。
+RFC 连接在正确配置后是**稳定的**。以下方案是从实战中固化下来的**唯一正确路径**，用于解决初次配置时的环境问题；配置完成后 RFC 长连接稳定，无需过度担心。
 
 #### 核心原则
 
@@ -414,17 +420,17 @@ output/<program>/docs/
 output/<program>/abap/sources/    # 生成的源码（主程序 + INCLUDE）
 ```
 
-**示例**（程序名 `ZSAP_FI253`）：
+**示例**（程序名 `ZSAP_FIxxx`）：
 ```
-output/ZSAP_FI253/spec/functional-spec-ai.md
-output/ZSAP_FI253/metadata/tables/BKPF.json
-output/ZSAP_FI253/metadata/performance-estimate.md
-output/ZSAP_FI253/docs/tech-design.md
-output/ZSAP_FI253/docs/fs-coverage.md
-output/ZSAP_FI253/docs/template-mapping.md
-output/ZSAP_FI253/docs/deployment-config.md
-output/ZSAP_FI253/docs/stage-gate.md
-output/ZSAP_FI253/abap/sources/
+output/ZSAP_FIxxx/spec/functional-spec-ai.md
+output/ZSAP_FIxxx/metadata/tables/BKPF.json
+output/ZSAP_FIxxx/metadata/performance-estimate.md
+output/ZSAP_FIxxx/docs/tech-design.md
+output/ZSAP_FIxxx/docs/fs-coverage.md
+output/ZSAP_FIxxx/docs/template-mapping.md
+output/ZSAP_FIxxx/docs/deployment-config.md
+output/ZSAP_FIxxx/docs/stage-gate.md
+output/ZSAP_FIxxx/abap/sources/
 ```
 
 ## 阶段 1：FS → 便于 AI 识别的功能文件
@@ -438,6 +444,45 @@ output/ZSAP_FI253/abap/sources/
 5. **权限、性能、变式**等约束
 
 用稳定标题与列表，避免冗长叙述；表名一律 **大写**。
+
+## 阶段 1.5：程序名确认与 SAP 存在性检查（新增，硬门禁）
+
+> **位置**：`functional-spec-ai.md` 已确认、但 **尚未创建 `output/<program>/` 任何目录和文件** 之前。
+> **目的**：避免生成全套产物后才发现程序名冲突，导致全部重做或误覆盖。
+
+### 1.5.1 从 FS 提取并确认程序名
+
+代理从 `functional-spec-ai.md` 或用户指令中提取目标程序名（如 `ZSAP_FI086`）。
+
+- 若用户未显式指定程序名 → 代理根据 FS 编号和功能语义推荐一个（如 EE086 → `ZSAP_FI086`），**必须向用户确认**。
+- 若用户已指定 → 直接采用，但仍需执行下一步存在性检查。
+
+### 1.5.2 立即执行 SAP 存在性检查（**禁止跳过**）
+
+程序名一经确认，代理**必须立即**通过 MCP `searchObject` 查询 SAP 系统：
+
+1. **主程序名**：`searchObject` 查询主程序名（如 `ZSAP_FI086`）。
+2. **Include 名**：`searchObject` 查询 `${progName}T01`、`${progName}SEL`、`${progName}F01`。
+
+**查询结果处理**：
+
+| 结果 | 动作 |
+|------|------|
+| 主程序或任一 Include **已存在** | **立即停止**，向用户报告：`程序 ZSAP_FI086 已存在于 SAP（包：XXX，描述：XXX）。` 必须让用户**重新提供新程序名**（如 `ZSAP_FI086A`），或**用户明确书面确认"覆盖已有程序"**后，方可继续。**禁止**代理擅自改程序名、追加字母/数字、或把"已存在"当警告跳过。 |
+| 主程序及所有 Include **均不存在** | 输出 `[OK] 程序名 ${progName} 在 SAP 中可用`，继续阶段 2。 |
+
+### 1.5.3 确认完毕后才开始生成产物
+
+**硬性规则**：只有在 `searchObject` 确认目标程序名（及所有 Include 名）在 SAP 中均**不存在**，或用户**书面确认覆盖**后，代理才允许：
+
+- 创建 `output/<program>/` 目录树
+- 写入 `functional-spec-ai.md`、`metadata/`、`docs/` 等任何文件
+- 进入阶段 2 及以后
+
+**违反后果**：若跳过 1.5.2 直接生成产物，后续发现程序名冲突时，代理必须：
+1. 向用户道歉并说明冲突；
+2. 等待用户确认新程序名；
+3. 将已生成的全部产物**整体迁移**到新程序名目录（含文件内程序名替换）。
 
 ## 阶段 2：透明表列表与 DDIC 元数据
 
@@ -488,12 +533,14 @@ output/ZSAP_FI253/abap/sources/
 2. **先打开** `output/<program>/docs/tech-design.md`（字段契约）与涉及的 `output/<program>/metadata/tables/*.json`，再动笔；**Open SQL、内表定义、LOOP 中使用的字段名**须与之一致。
 3. **模板来源**：以阶段 3.6 确认的模板为骨架（用户指定模板 或 Skill 默认模板 `templates/reference/ZSAP_FI244/`）；**业务 SELECT/JOIN/WHERE** 不得与契约和元数据冲突。
 4. **模板结构强约束**：若参考程序是"主程序 + INCLUDE 分层"（如 `xxxT01`/`xxxSEL`/`xxxF01`），新程序**源码生成阶段**必须保持同等分层（输出到 `output/<program>/abap/sources/`），以便审计与后续维护。
-   > **⚠️ INCLUDE 部署限制（已知缺陷）**：当前 MCP `abap-adt` 的 `setObjectSource` 工具硬编码 `PROG/P`（可执行程序），**不能用于创建/更新 Include（`PROG/I`）**。若直接用 `setObjectSource` 上传 Include 名称，SAP 中实际创建的是同名的可执行程序，导致类型错位、后续激活/搜索/删除均异常。因此：
-   > - **阶段 5 部署时**：使用**合并单文件**（`ZSAP_FIxxx_merged.abap`，将主程序与全部 INCLUDE 拼接为一个完整 REPORT）通过 `setObjectSource` 部署到**主程序名**上。
-   > - **分层源码仍必须保留**在 `output/<program>/abap/sources/` 下，作为代码资产与后续人工拆分的基础。
+   - 主程序：`ZSAP_FIxxx.abap`（含 `REPORT` 语句和 `INCLUDE` 引用）
+   - TOP 包含：`ZSAP_FIxxxT01.abap`
+   - 选择屏幕：`ZSAP_FIxxxSEL.abap`
+   - 子程序：`ZSAP_FIxxxF01.abap`
+   - 输出模块：`ZSAP_FIxxxO01.abap`（如使用 ALV）
 5. 生成前必须先写 `output/<program>/docs/template-mapping.md`，至少列出：`参考对象`、`新对象`、`对应 INCLUDE 清单`、`保留/替换说明`，以便审计"确实参照了模板格式"。
 6. **Eclipse ADT 侧同类操作在 MCP 中的顺序**（概念上）：`findObjectPath` / `createObject` → `lock` → `setObjectSource` → `syntaxCheckCode`。
-   - `createObject` 时按 `deployment-config.md` 传入 `devclass`（包）与 `transport`（请求号）；若包为 `$TMP`，传输请求字段留空或按 MCP schema 要求处理。
+   - `createObject` 时按 `deployment-config.md` 传入 `devclass`（包）、`transport`（请求号）与 `description`（程序描述）；若包为 `$TMP`，传输请求字段留空或按 MCP schema 要求处理。
 7. 传输：`transport` / `transportReference` 按 MCP 工具要求传入。
 
 ## FS 对齐审查机制（新增，阶段 3.5，未通过禁止阶段 4）
@@ -530,16 +577,29 @@ output/ZSAP_FI253/abap/sources/
   - **用户有请求号**：记录到 `output/<program>/docs/deployment-config.md`，代理在后续 `createObject`/`lock` 时按 MCP 要求传入。
   - **用户无请求号或要求新建**：代理通过 MCP 或引导用户在 SAP GUI 中创建传输请求。
     - **命名规则**：`ABAP_<功能名称>_<开发账号>_<YYYYMMDD>`
-    - 例：功能名称为"序时账"、账号 `ITL12`、日期 `20260424` → `ABAP_序时账_ITL12_20260424`
-    - 若系统不支持中文描述，转拼音或英文缩写，如 `ABAP_Journal_ITL12_20260424`。
+    - 例：功能名称为"序时账"、账号 `<username>`、日期 `20260424` → `ABAP_序时账_<username>_20260424`
+    - 若系统不支持中文描述，转拼音或英文缩写，如 `ABAP_Journal_<username>_20260424`。
     - 创建后记录请求号到 `output/<program>/docs/deployment-config.md`。
 
 ### 3.6.3 程序模板选择
 
-- **询问用户**：是否有现有报表程序作为模板参考（提供程序名，如 `ZSAP_FI244`）。
-  - **用户提供了模板**：代理通过 `getObjectSource` 拉取该程序源码（含全部 INCLUDE），保存到 `templates/reference/<程序名>/`，并在 `output/<program>/docs/template-mapping.md` 中列出模板与新程序的 INCLUDE 对应关系。
-  - **用户未提供模板**：使用 Skill 包内置的**默认模板** `output/ZSAP_FI244/abap/sources/`（标准主程序 + `T01`/`SEL`/`F01` 三层 INCLUDE 结构）。代理须将该目录复制到 `templates/reference/ZSAP_FI244/` 作为本次参考基线。
-- **模板结构强约束**：无论使用用户模板还是默认模板，新程序必须保持同等的 INCLUDE 分层结构（`xxxT01`、`xxxSEL`、`xxxF01`），不得退化为单文件大程序（除非用户明确要求简化）。
+**模板搜索顺序（代理必须执行，不可跳过）**：
+
+1. **搜索本地模板目录**：
+   - `templates/reference/<程序前缀>*/**/*.abap`
+   - `templates/**/*.abap`
+   - `output/ZSAP_FI244/abap/sources/`（遗留默认模板，如存在）
+2. **搜索结果处理**：
+   - **找到可用模板**：记录模板路径到 `deployment-config.md`，继续后续流程。
+   - **未找到任何模板**：**立即停止**，明确告知用户："未找到本地模板程序。请提供模板程序名（如 `ZSAP_FI244`）或模板目录路径，或确认无需模板直接生成。"
+   - **禁止**在未确认模板的情况下自行推断骨架并继续编码。
+
+**用户主动提供模板时**：
+- 若用户提供程序名（如 `ZSAP_FI244`）：代理通过 `getObjectSource` 拉取该程序源码（含全部 INCLUDE），保存到 `templates/reference/<程序名>/`。
+- 若用户提供本地目录路径：直接复制到 `templates/reference/` 下。
+- 在 `output/<program>/docs/template-mapping.md` 中列出模板与新程序的 INCLUDE 对应关系。
+
+**模板结构强约束**：无论使用用户模板还是默认模板，新程序必须保持同等的 INCLUDE 分层结构（`xxxT01`、`xxxSEL`、`xxxF01`），不得退化为单文件大程序（除非用户明确要求简化）。
 
 ### 3.6.4 输出产物
 
@@ -552,6 +612,7 @@ output/ZSAP_FI253/abap/sources/
 |---|---|---|
 | 目标包 | $TMP 或 ZGD01 | |
 | 传输请求 | 空 或 K9XXXXXX | 本地包时为空 |
+| 程序描述 | 功能说明书中的程序标题 | 创建程序时写入 SAP 的 description |
 | 参考模板 | ZSAP_FI244 或用户指定 | |
 | 新程序名 | ZSAP_XXXX | 用户指定 |
 | 创建日期 | YYYY-MM-DD | |
@@ -564,6 +625,7 @@ output/ZSAP_FI253/abap/sources/
 每阶段完成后必须落盘 `output/<program>/docs/stage-gate.md` 并打勾，未打勾禁止进入下一阶段。
 
 - 阶段 1 门禁：`output/<program>/spec/functional-spec-ai.md` 存在且包含选择条件/输出列/透明表清单。
+- 阶段 1.5 门禁：`output/<program>/docs/stage-gate.md` 中 `S1.5=program-name-confirmed: yes`，且 `deployment-config.md` 中的程序名已通过 `searchObject` 验证在 SAP 中不存在（或用户书面确认覆盖）。**S1.5 未通过 → 禁止创建 `output/<program>/` 任何目录和文件。**
 - 阶段 2 门禁：每张透明表对应 `output/<program>/metadata/tables/<TAB>.json` 或 `_errors.md` 有完整补救记录；`output/<program>/metadata/performance-estimate.md` 已生成（阶段 2.5）。
 - 阶段 3 门禁：`output/<program>/docs/tech-design.md` + `output/<program>/docs/fs-coverage.md` + `output/<program>/docs/template-mapping.md` 完整。
 - 阶段 3.6 门禁：`output/<program>/docs/deployment-config.md` 已生成，开发包/请求号/模板状态明确。
@@ -576,6 +638,7 @@ output/ZSAP_FI253/abap/sources/
 ```markdown
 S0=permission-check: yes/no
 S1=functional-spec-ready: yes/no
+S1.5=program-name-confirmed: yes/no
 S2=metadata-ready: yes/no
 S2.5=performance-estimate-ready: yes/no
 S3=tech-design-ready: yes/no
@@ -598,13 +661,46 @@ S5.5=smoke-test-passed: yes/no
 - **失败处理**：若 `git` 不可用或仓库未初始化 → 跳过并提示用户；不阻塞工作流。
 - **价值**：当阶段 4/5 反复修错时，可随时 `git diff` 查看变更；当需要回滚到某阶段时，可直接 `git checkout` 到对应提交。
 
-## 阶段 5：部署与激活（循环直至成功）
+## 阶段 5：部署与激活
+
+> **优先方式**：批量部署走独立脚本 `scripts/deploy_rfc.js`（直接 RFC 调 ADT REST）。MCP 代理模式（`setObjectSource`/`activateObjects`）仅用于查询或脚本不可用时的手动调试。
+
+### 5.0 部署前复核（新增，硬门禁）
+
+在调用任何部署脚本或 MCP 写操作前，代理**必须**执行以下复核，缺一不可：
+
+1. **程序名冲突复核**：确认阶段 1.5 的 `searchObject` 结果已记录在案，且 `deployment-config.md` 中的程序名与之一致。
+   - 若阶段 1.5 未执行（如用户直接要求部署）→ **必须先补做 1.5.2 存在性检查**。
+   - 若查询发现程序已存在但用户未书面确认覆盖 → **立即停止部署**。
+2. **Include 名复核**：同样确认所有 Include 名在阶段 1.5 中已验证可用。
+3. **阶段门禁复核**：确认 `stage-gate.md` 中 `S3.6=deployment-config-ready: yes` 且 `deployment-config.md` 中的程序名与用户最终确认的一致。
+
+**违反 5.0 的后果**：覆盖已有程序可能导致生产事故、数据丢失或审计追责。代理若跳过此检查，视为严重流程错误。
+
+### 5.1 独立脚本部署（推荐）
+
+1. 执行 `node scripts/deploy_rfc.js [program]`。
+2. 脚本自动完成：创建主程序 → Lock → 上传主程序源码 → 创建 Include → 逐个 Lock/Upload/Unlock → Unlock 主程序 → **语法检查** → **激活** → **检查激活结果**。
+3. **脚本内部行为**：若程序已存在，脚本输出 `FATAL` 并 `process.exit(1)`；代理**禁止**修改脚本把报错降级为警告或自动继续。
+4. **语法检查（新增，激活前强制）**：
+   - 脚本对主程序及所有 Include 调用 ADT 语法检查（`POST .../source/main?method=check`）。
+   - 若任一对象存在语法错误 → **立即停止部署**，输出错误行号与消息，**不执行激活**。
+   - 若端点返回 **405** → 标记 `unavailable`，记录日志，由激活阶段兜底验证语法（继续执行激活）。
+   - 代理必须先修复源码语法错误，再重新部署。
+5. **激活结果检查（新增，激活后强制）**：
+   - 脚本解析激活响应，检查每个对象的激活状态。
+   - 若激活返回失败（`severity=error`、`abapSyntaxError` 或对象状态非成功）→ **立即报告**，输出失败对象名与消息，标记部署失败。
+   - **禁止**仅因 HTTP 200 就认为激活成功；必须解析响应体确认无错误。
+   - 解析器必须覆盖三种格式：`<msg type="E|A">`、`<atom:entry>`（category=error）、`<entry>`。漏掉 `<msg type="E">` 会导致假成功。
+6. 脚本成功后，进入阶段 5.5 冒烟测试。
+
+### 5.2 MCP 手动部署（备用，仅脚本失败时）
 
 1. 使用 `activateByName` 或 `activateObjects`（需完整 object URI 与类型信息）。
-2. **INCLUDE 对象的部署限制**：
-   - **禁止**用 `setObjectSource` 直接上传 Include 名称（如 `ZxxxT01`、`ZxxxSEL`、`ZxxxF01`），因为该工具硬编码 `PROG/P`，会把 Include 创建为同名的可执行程序，造成类型错位。
-   - **正确做法**：将主程序与所有 Include 拼接为**合并单文件**（`ZSAP_FIxxx_merged.abap`，保持 `REPORT` + `INCLUDE` 语句完整），通过 `setObjectSource` 部署到**主程序名**上。SAP 系统在编译主程序时会自动解析其中的 `INCLUDE` 语句并在本地创建对应的 Include 对象（类型为 `PROG/I`）。
-   - 若需要显式激活 Include，当前 `ActivateObjects`（`ActivateObjectLow`）对 `PROG/I` 的支持存在缺陷：其内部 `buildObjectUri` 缺少 `PROG/I` → `/sap/bc/adt/programs/includes/{name}` 的映射，会生成错误的 URI（`/sap/bc/adt/prog/i/...`），导致 ADT 返回 "No suitable resource"。**因此现阶段只需激活主程序即可**；主程序激活时，系统会自动处理其引用的 Include。
+2. **INCLUDE 对象的部署**：
+   - **禁止**用 MCP `setObjectSource` 直接上传 Include 名称（如 `ZxxxT01`、`ZxxxSEL`、`ZxxxF01`），因为该工具硬编码 `PROG/P`，会把 Include 创建为同名的可执行程序，造成类型错位。
+   - **正确做法**：通过 `scripts/deploy_rfc.js` 直接调用原生 ADT REST API（`SADT_REST_RFC_ENDPOINT`），该脚本能正确处理 `PROG/I` 类型：创建 Include → Lock → 上传源码 → Unlock。
+   - `activateObjects` 激活主程序时，系统会自动处理其引用的 Include。
 3. 若失败：解析返回中的 **消息/日志**（含行号、对象名），**分类处理**：
   - 语法/拼写 → 改源码后 `setObjectSource`，再 `syntaxCheckCode`。
   - 依赖未激活 → 先激活依赖对象或调整顺序。
@@ -672,6 +768,8 @@ S5.5=smoke-test-passed: yes/no
 - [ ] 阶段 0：验证连通通过（重启后实测）
 - [ ] 阶段 0.9：权限前置探测通过（S_DEVELOP / 包权限 / 传输请求）
 - [ ] output/<program>/spec/functional-spec-ai.md 结构完整
+- [ ] **1.5 程序名确认：已通过 MCP searchObject 确认目标程序名及所有 Include 名在 SAP 中不存在，或用户已书面确认覆盖**
+- [ ] output/<program>/docs/deployment-config.md 已记录经确认的程序名
 - [ ] 每张透明表均有 metadata JSON（阶段 2 产物）
 - [ ] output/<program>/metadata/tables/_errors.md 对失败对象包含"尝试路径 + 原始报错 + 下一步动作"
 - [ ] output/<program>/metadata/performance-estimate.md 已生成（主表 COUNT + 量级分类 + 分页建议）
@@ -681,6 +779,7 @@ S5.5=smoke-test-passed: yes/no
 - [ ] output/<program>/docs/template-mapping.md 已证明新程序结构对齐参考模板（含 INCLUDE）
 - [ ] output/<program>/docs/stage-gate.md 每阶段门禁已打勾（含 S0/S2.5/S3.6/S5.5）
 - [ ] Open SQL / 内表字段均可追溯到契约与 metadata（无凭空字段）
+- [ ] **5.0 部署前：已通过 MCP searchObject 确认目标程序名及所有 Include 名在 SAP 中不存在，或用户已书面确认覆盖**
 - [ ] 源码已 syntaxCheckCode
 - [ ] 激活成功或达到重试上限并记录原因
 - [ ] output/<program>/docs/smoke-test.md 已生成且通过最低验证（源码一致 / 执行探针 / ALV 列核对）
@@ -758,30 +857,115 @@ const body = resp.MESSAGE_BODY
 |------|------|------|
 | 创建程序报 **404** | URI 拼写错误或程序名大小写问题 | 确认 URI 为 `/sap/bc/adt/programs/programs`；程序名在 URI 中统一使用**小写** |
 | 创建程序报 **406** | `Accept` 或 `Content-Type` 头不匹配 | 对照上表使用正确的 MIME 类型；可用 Discovery（`GET /sap/bc/adt/discovery`）确认系统支持的类型 |
-| 创建程序报 **409** | 程序已存在 | 正常情况，跳过创建直接执行 Lock + 上传 |
+| 创建程序报 **409** | 程序已存在 | **必须问用户**：提供新程序名或确认覆盖。禁止代理自动跳过 |
 | 上传源码报 **400/403** | `lockHandle` 缺失、过期或编码问题 | 重新 Lock 获取新 handle；确保 `lockHandle` 已 URL-encode |
 | 激活失败 | 语法错误或依赖对象未激活 | 先修正源码语法；检查 INCLUDE 是否已上传并解锁 |
-| `setObjectSource` 上传 Include 后，SAP 里按 Include 搜索不到 | `setObjectSource` 硬编码 `PROG/P`，把 Include 创建成了同名的**可执行程序** | **禁止**用 `setObjectSource` 直接传 Include 名称；改用**合并单文件**部署到主程序，让 SAP 自动解析 `INCLUDE` 语句创建 `PROG/I` |
+| `setObjectSource` 上传 Include 后，SAP 里按 Include 搜索不到 | `setObjectSource` 硬编码 `PROG/P`，把 Include 创建成了同名的**可执行程序** | **禁止**用 `setObjectSource` 直接传 Include 名称；改用 `scripts/deploy_rfc.js` 通过原生 ADT REST API 逐对象部署 |
 | `ActivateObjects` 对 `PROG/I` 返回 "No suitable resource" | `buildObjectUri` 缺少 `PROG/I` 映射，生成错误 URI `/sap/bc/adt/prog/i/...` | 不单独激活 Include，只激活主程序；主程序激活时系统会自动处理其引用的 Include |
 | 调用 `INSERT_REPORT` 报"函数不存在" | 使用了非标准 FM | **禁止**使用 `INSERT_REPORT`，改用 `SADT_REST_RFC_ENDPOINT` + ADT REST API |
+| 激活报 HTTP 200 但对象实际未激活（假成功） | `activate-objects.js` 解析器仅匹配 `<entry>`，漏掉了 SAP 返回的 `<msg type="E">` 格式错误 | 重写解析器：同时匹配 `<msg type="E|A">`、`<atom:entry>`（category=error）、`<entry>` 三种格式，任何一条命中即视为激活失败 |
+| 语法检查端点返回 **405** | 当前 SAP 版本不支持该 ADT 语法检查端点 | `syntax-check.js` 捕获 405 → 返回 `{ unavailable: true }`，由激活阶段兜底验证语法 |
+| 文本元素 / GUI Status 写入报 **404** | 当前 SAP 版本的 ADT REST API 不支持通过该端点写入文本元素和 GUI Status | 标记为已知限制；部署后由用户在 SE80 中手动维护，并在 `smoke-test.md` 中记录 |
+| 程序被创建到 `$TMP` 而非目标包 | `env.js` 错误地从 `.env` 读取全局 `SAP_DEPLOY_PACKAGE`，或脚本未使用 `load-deployment-config.js` | 部署配置必须按程序隔离：`load-deployment-config.js` 从 `output/<program>/docs/deployment-config.md` 读取每程序的目标包和传输请求，禁止在 `.env` 中写死全局包名 |
 | `STATUS_LINE` 无 `STATUS_CODE` | 部分系统返回字段名不同 | 兼容解析：`STATUS_CODE` 优先， fallback 到 `CODE` |
 
 ### 参考实现（脚本库使用指南）
 
-> **脚本库原则**：只保留 4 个独立脚本，职责单一、无重复。所有脚本统一读取 `.env`，产出按 `output/<program>/` 隔离。
+> **脚本库原则**：按 ADT URL 拆分为独立模块，每个模块职责单一；主脚本仅负责编排组合。所有脚本统一读取 `.env`，产出按 `output/<program>/` 隔离。
 
-| 脚本 | 用途 | 调用方式 | 产出路径 |
-|------|------|---------|---------|
-| `scripts/test_rfc.js` | RFC 环境诊断（DLL、连接、PING） | `node scripts/test_rfc.js` | 仅控制台输出，不写文件 |
-| `scripts/fetch_metadata.js` | 批量拉取透明表 DDIC 元数据 | `node scripts/fetch_metadata.js [program]` | `output/<program>/metadata/tables/<TAB>.json` |
-| `scripts/perf_estimate.js` | 主表 COUNT 预估与性能建议 | `node scripts/perf_estimate.js [program]` | `output/<program>/metadata/performance-estimate.md` |
-| `scripts/deploy_rfc.js` | RFC 直连 ADT REST 部署程序 | `node scripts/deploy_rfc.js`（程序名在脚本内配置） | 读取 `output/<progName>/abap/sources/` 下源码，写入 SAP |
+### 脚本目录结构
 
-**参数说明**：
-- `[program]`：可选，程序名（如 `ZSAP_FI253`）。缺省时依次读取 `process.argv[2]`、`SAP_PROGRAM` 环境变量、默认值 `ZSAP_FI253`。
-- 所有脚本均从 `.env` 读取 SAP 连接参数，**无需在脚本内硬编码**。
+```
+根目录辅助脚本
+├── rfc-proxy-server.js              # RFC ADT 代理服务器（监听 localhost:9876）
+├── mcp-launcher.js                  # MCP 启动包装器（自动设置 SAPNWRFC_HOME + PATH）
+├── run-claude.js                    # 带预设 prompt 启动 Claude Code（一次性/遗留）
+└── launch-claude.js                 # 启动 Claude Code（无 prompt，stdio inherit）
 
-**已删除脚本**：`scripts/setup-rfc-env.ps1`（功能与 `test_rfc.js` 完全重复，不再维护）。
+scripts/
+├── deploy_rfc.js                    # 主部署脚本（编排模块）
+├── deploy_includes_only.js          # 仅部署 Include（不创建/上传主程序）
+├── extract-docx.js                  # 从 .docx 提取文本
+├── test_rfc.js                      # RFC 环境诊断（独立验证 node-rfc + 连通性）
+├── test_mcp_login.js                # MCP 端到端连通测试（通过 RFC 代理验证 objectTypes）
+├── fetch_metadata.js                # 批量拉取透明表 DDIC
+├── perf_estimate.js                 # 主表 COUNT 预估
+├── release_locks.js                 # 释放当前用户在 SAP 中的所有锁（DEQUEUE_ALL）
+├── unlock_prog.js                   # 解锁指定程序（需硬编码 lockHandle，应急用）
+├── unlock_includes.js               # 解锁 Include（遗留）
+├── unlock_includes_v2.js            # 解锁 Include（改进版）
+└── modules/                         # ADT 原子操作模块（每个 URL 一个脚本）
+    ├── env.js                       # 加载 .env，构建 RFC 连接参数（不含部署配置）
+    ├── load-deployment-config.js    # 从 output/<program>/docs/deployment-config.md 读取程序级部署配置（包/请求号/描述）
+    ├── sap-connection.js            # RFC Client 创建
+    ├── adt-request.js               # 通用 ADT HTTP 请求（SADT_REST_RFC_ENDPOINT）
+    ├── lock-object.js               # POST ...?_action=LOCK
+    ├── unlock-object.js             # POST ...?_action=UNLOCK
+    ├── create-program.js            # POST /sap/bc/adt/programs/programs
+    ├── create-include.js            # POST /sap/bc/adt/programs/includes
+    ├── upload-program-source.js     # PUT /programs/programs/{name}/source/main
+    ├── upload-include-source.js     # PUT /programs/includes/{name}/source/main
+    ├── syntax-check.js              # POST .../source/main?method=check
+    ├── activate-objects.js          # POST /sap/bc/adt/activation?method=activate
+    └── with-lock.js                 # 自动锁管理组合（lock → fn → unlock）
+```
+
+### 模块使用指南
+
+| 模块 | 对应 ADT URL | 职责 |
+|------|-------------|------|
+| `modules/load-deployment-config.js` | 读取 Markdown 表格 | 从 `deployment-config.md` 解析目标包、传输请求、程序描述（程序级配置，非全局 `.env`） |
+| `modules/env.js` | 读取 `.env` | 加载 SAP 连接参数（URL/USER/PASSWORD/CLIENT/ROUTER 等），**不含部署配置** |
+| `modules/create-program.js` | `POST /sap/bc/adt/programs/programs` | 创建 PROG/P，处理 409 已存在 |
+| `modules/create-include.js` | `POST /sap/bc/adt/programs/includes` | 创建 PROG/I，处理 409 已存在 |
+| `modules/upload-program-source.js` | `PUT /programs/programs/{name}/source/main` | 上传主程序源码 |
+| `modules/upload-include-source.js` | `PUT /programs/includes/{name}/source/main` | 上传 Include 源码 |
+| `modules/lock-object.js` | `POST ...?_action=LOCK&accessMode=MODIFY` | 获取 lockHandle |
+| `modules/unlock-object.js` | `POST ...?_action=UNLOCK&lockHandle={h}` | 释放锁（忽略错误） |
+| `modules/syntax-check.js` | `POST .../source/main?method=check` | 语法检查；若系统返回 405 → 标记 `unavailable`，由激活阶段兜底验证 |
+| `modules/activate-objects.js` | `POST /sap/bc/adt/activation?method=activate` | 激活对象；必须解析 `<msg type="E">`、`<atom:entry>`、`<entry>` 三种错误格式 |
+| `modules/with-lock.js` | 组合 lock + fn + unlock | **保证无论 fn 成功/异常都释放锁** |
+
+### 独立辅助脚本速查
+
+以下脚本不在 `modules/` 下，但同样供代理在特定场景调用：
+
+| 脚本 | 场景 | 说明 |
+|------|------|------|
+| `rfc-proxy-server.js` | 阶段 0 启动 RFC 代理 | 监听 `127.0.0.1:9876`，将 HTTP ADT REST 请求转译为 `SADT_REST_RFC_ENDPOINT` RFC 调用。启动后常驻后台，直到手动 `SIGINT`。 |
+| `mcp-launcher.js` | 替代 `.mcp.json` 直接启动 MCP | 设置 `SAPNWRFC_HOME` 和 `PATH` 后加载 `mcp-abap-abap-adt-api/dist/index.js`。仅在 `.mcp.json` 使用 `args: ["mcp-launcher.js"]` 时生效。 |
+| `scripts/test_mcp_login.js` | MCP 连通性端到端测试 | 自动检查代理是否运行 → 启动代理（如需）→ 对 MCP 发送 `objectTypes` JSON-RPC 请求 → 输出 `PASSED`/`FAILED`。用于验证整条链路（MCP → 代理 → SAP）。 |
+| `scripts/release_locks.js` | 应急释放锁 | 通过 RFC 调用 `DEQUEUE_ALL` 释放当前用户持有的全部 SAP 锁。部署卡住或锁泄漏时使用。 |
+| `scripts/unlock_prog.js` | 应急解锁指定程序 | 通过 RFC 直接发送 UNLOCK ADT 请求，需手动填入 `lockHandle`。用于代理锁异常时的手动释放。 |
+| `scripts/unlock_includes.js` / `v2` | 应急解锁 Include | 同上，针对 Include 对象。v2 为改进版本。 |
+| `scripts/deploy_includes_only.js` | 仅部署 Include | 当主程序已在 SAP 中创建好，只需更新 Include（T01/SEL/F01）时使用。不创建主程序、不覆盖主程序源码。 |
+| `run-claude.js` / `launch-claude.js` | 本地启动 Claude Code | 一次性/遗留脚本，用于在 Windows 上通过 `child_process.spawn` 启动 Claude Code CLI。日常由用户直接使用 `claude` 命令替代。 |
+
+### 主脚本部署流程（`scripts/deploy_rfc.js`）
+
+```
+1. 读取源码 → 2. 创建程序 → 3. 上传主程序（withLock）→
+4. 创建 Include → 5. 上传 Include（withLock）→
+6. 语法检查（全部对象）→ 7. 激活 → 8. 检查激活结果
+```
+
+**硬规则**：
+- 语法检查有错误 → **立即停止**，不执行激活，输出错误行号与消息。
+- 语法检查端点返回 **405** → 标记 `unavailable: true`，记录到日志，**由激活阶段兜底验证语法**（继续执行激活，不终止）。
+- 激活返回失败 → **立即报告**，输出失败对象名与消息。
+- **激活结果解析必须覆盖三种格式**：`<chkl:messages>` 中的 `<msg type="E|A">`、`<atom:entry>` 中 `category term="error"`、以及简单 `<entry>` 标签。**禁止**仅匹配 `<entry>` 而漏掉 `<msg type="E">` 格式的真实错误。
+- 任何异常退出前，`finally` 中必须释放所有已获取的锁。
+
+**部署后手动步骤（已知 ADT API 限制）**：
+- **文本元素（Text Elements）**：ADT REST API 在当前 SAP 版本中写入文本元素返回 404，脚本无法自动写入。部署完成后需用户在 SE80 中手动维护 `TEXT-001` 等文本。
+- **GUI 状态（GUI Status）**：ADT REST API 在当前 SAP 版本中写入 GUI Status 返回 404，脚本无法自动创建。部署完成后需用户在 SE80 中手动复制并维护 GUI Status。
+- 上述限制应在 `smoke-test.md` 中明确标注为 "Manual step required in SE80"。
+
+### 旧脚本
+
+| 脚本 | 状态 | 说明 |
+|------|------|------|
+| `scripts/setup-rfc-env.ps1` | 已删除 | 功能与 `test_rfc.js` 重复 |
 
 ## 迁移到其他环境
 
@@ -831,12 +1015,23 @@ const body = resp.MESSAGE_BODY
 - **行为**：`abap-adt-api` 的 `AdtClient` 只暴露了 `getProgram()`、`getClass()`、`getInterface()` 等，**没有 `getInclude()`**。虽然 `abap-adt-api` 底层支持读取 Include 源码，但缺少对 Include 的 lock / update / create 封装。
 - **后果**：MCP 中不存在 `UpdateInclude` 或 `CreateInclude` 工具。
 
-### 当前 workaround（合并单文件部署）
+### INCLUDE 的正确部署方式（多文件原生 ADT REST）
 
-1. **阶段 4 仍生成分层源码**：主程序 + T01 / SEL / F01 分别输出到 `output/<program>/abap/sources/`，保持代码结构与模板一致，便于审计和维护。
-2. **阶段 5 使用合并文件**：将主程序与所有 Include 按正确顺序拼接为一个完整文件（`ZSAP_FIxxx_merged.abap`），保留所有 `INCLUDE` 语句。
-3. **通过 `setObjectSource` 部署到主程序名**：上传合并文件到主程序（如 `ZSAP_FI253`）。SAP 编译主程序时，会自动解析源码中的 `INCLUDE ZSAP_FI253T01.` 等语句，在本地创建对应的 `PROG/I` 对象。
-4. **只激活主程序**：主程序激活时，系统会自动处理其引用的 Include，无需（也无法）单独激活 Include。
+**禁止合并单文件部署**。SAP 系统无法通过合并文件自动解析生成 INCLUDE 对象，这种做法会导致：
+- 主程序编译时 INCLUDE 引用找不到对应对象
+- 系统可能将 INCLUDE 创建为同名的可执行程序，造成类型错乱
+- 后续维护、搜索、删除均异常
+
+**正确做法**：使用 `scripts/deploy_rfc.js` 通过原生 ADT REST API（`SADT_REST_RFC_ENDPOINT`）逐对象部署：
+
+1. **阶段 4 生成分层源码**：主程序 + T01 / SEL / F01 分别输出到 `output/<program>/abap/sources/`，保持代码结构与模板一致。
+2. **阶段 5 执行脚本部署**：`node scripts/deploy_rfc.js <program>`
+   - 脚本自动完成：创建主程序（`PROG/P`）→ Lock → 上传主程序源码
+   - 创建 Include（`PROG/I`，`program:programType="I"`）→ 逐个 Lock/Upload/Unlock
+   - Unlock 主程序 → Activate 主程序
+3. **激活主程序即可**：主程序激活时，系统会自动处理其引用的 Include。
+
+脚本内部通过 `SADT_REST_RFC_ENDPOINT` 直接调用 SAP ADT REST，绕过 MCP 层 `setObjectSource` 对 `PROG/P` 的硬编码限制。
 
 ### 若要彻底修复 MCP
 
