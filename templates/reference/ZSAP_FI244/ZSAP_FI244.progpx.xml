@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<adtcore:mainObject adtcore:responsible="ITL12" adtcore:masterLanguage="ZH" adtcore:masterSystem="EFD" adtcore:name="ZSAP_FI244" adtcore:type="PROG/PX" adtcore:version="active" adtcore:createdAt="2026-03-11T16:00:00Z" adtcore:description="序时账" adtcore:language="ZH" xmlns:adtcore="http://www.sap.com/adt/core">
-  <adtcore:packageRef adtcore:uri="/sap/bc/adt/vit/wb/object_type/devck/object_name/ZABAP" adtcore:type="DEVC/K" adtcore:name="ZABAP"/>
-</adtcore:mainObject>

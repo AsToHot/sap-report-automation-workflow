@@ -19,7 +19,7 @@ if (!currentPath.includes(sdkLib)) {
   process.env.PATH = sdkLib + path.delimiter + currentPath;
 }
 
-// Forward CLI args to launcher.js
-const launcherPath = require.resolve('./mcp-abap-adt/dist/server/launcher.js');
+// Forward CLI args to MCP server entry
+const launcherPath = require.resolve('./mcp-abap-abap-adt-api/dist/index.js');
 process.argv = [process.argv[0], launcherPath, ...process.argv.slice(2)];
 require(launcherPath);

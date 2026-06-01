@@ -1,4 +1,6 @@
-# MCP 可行性分析与社区价值评估
+> **历史记录**：本文档记录 2026-04-25 之前的 MCP 选型分析。当前项目已确定使用 `mario-andreschak/mcp-abap-abap-adt-api`（内置）+ `rfc-proxy-server.js` 作为唯一架构，fr0ster 版已不再使用。
+
+# MCP 可行性分析与社区价值评估（历史版本）
 
 ## 1. "这套东西"能否打包成 MCP？
 

@@ -1,4 +1,6 @@
-# SAP 报表自动化工作流 - Skill 打包与分发指南
+> **历史记录**：本文档记录 2026-04-25 之前的 Skill 打包方案。当前项目已切换至 `mcp-abap-abap-adt-api`（内置，无需 clone）+ `rfc-proxy-server.js` 架构。请参阅项目根目录 `README.md` 获取最新快速开始指南。
+
+# SAP 报表自动化工作流 - Skill 打包与分发指南（历史版本）
 
 ## 包结构
 

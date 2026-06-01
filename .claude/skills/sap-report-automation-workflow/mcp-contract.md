@@ -88,12 +88,16 @@
   - **禁止**依赖「对一个包名反复 `searchObject`」当枚举主手段（适合补全单个对象，不适合整包）。
 3. **按类型套 ADT URI 模板（不猜）**
   - 对每个 `(OBJECT, OBJ_NAME)`，用**固定规则**拼 `objectSourceUrl`，再调 `**getObjectSource`**。常见模板（**名称一律小写**拼进路径，与 ADT 一致）：
-    - 可执行程序：`/sap/bc/adt/programs/programs/<name>/source/main`
-    - Include：`/sap/bc/adt/programs/includes/<name>/source/main`
-    - 类：`/sap/bc/adt/oo/classes/<name>/source/main`
-    - 透明表：`/sap/bc/adt/ddic/tables/<name>/source/main`
+    - 可执行程序（REPORT）：`/sap/bc/adt/programs/programs/<name>/source/main`
+    - Include（PROG/I）：`/sap/bc/adt/programs/includes/<name>/source/main`
+    - 类（CLAS）：`/sap/bc/adt/oo/classes/<name>/source/main`
+    - 接口（INTF）：`/sap/bc/adt/oo/interfaces/<name>/source/main`
+    - 函数组（FUGR）：`/sap/bc/adt/functions/groups/<name>/source/main`
+    - Function Module（FUNC）：`/sap/bc/adt/functions/groups/<fugr>/fmodules/<name>/source/main`
+    - 透明表（TABL）：`/sap/bc/adt/ddic/tables/<name>/source/main`
+    - BAdI 增强点（ENHO）：`/sap/bc/adt/enhancements/enhs/<name>/source/main`
     - 域/数据元素等：见包内或团队的 **URI 规则表**（与 Eclipse ADT 打开对象时的 URL 一致即可）。
-  - 若某类型一次失败：**先换该类已知备选路径**（如 PROG 与 INCLUDE 互换），仍失败再对该对象单独 `findObjectPath` / `searchObject`，**不要把整包拉回试错模式**。
+  - 若某类型一次失败：**先换该类已知备选路径**，仍失败再对该对象单独 `findObjectPath` / `searchObject`，**不要把整包拉回试错模式**。
 4. **分批落盘 + 可续跑**
   - 每批处理 **N 条**（如 20～50 个对象，视单对象体积调整），写入目录并维护 `**manifest.json`/`progress.tsv`**：已拉取、失败原因、下一批游标。
   - 失败批次**单独重试**，避免从第一个对象重新开始。

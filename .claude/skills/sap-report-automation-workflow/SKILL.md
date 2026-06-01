@@ -1,10 +1,15 @@
 ---
 name: sap-report-automation-workflow
+version: 1.2
 description: |
-  End-to-end SAP 报表自动化（与 Eclipse ADT 能力对齐）：通过本地 RFC 代理将 HTTP ADT REST 请求转译为 RFC SADT_REST_RFC_ENDPOINT 调用 SAP；FS 规范化、透明表 DDIC、技术文档、按模板写 ABAP、激活循环；Open SQL 与内表字段必须由 metadata 驱动、禁止脱离元数据自由发挥。触发场景：用户要写 ABAP/SAP 报表、REPORT、ALV、从 FS 到部署、切换 SAP、配置或安装 MCP、login 失败。**MCP 未就绪时代理必须自动 npm build + 写 .mcp.json + 启动 rfc-proxy-server，不得把安装推给用户**。GitHub MCP：https://github.com/mario-andreschak/mcp-abap-abap-adt-api
+  End-to-end SAP ABAP 开发对象自动化（与 Eclipse ADT 能力对齐）：通过本地 RFC 代理将 HTTP ADT REST 请求转译为 RFC SADT_REST_RFC_ENDPOINT 调用 SAP；支持 **REPORT 报表**、**CLASS 类池**、**FUGR 函数组 / Function Module**、**INTF 接口**、**Include** 等全部常见 ABAP 开发对象类型。FS 规范化、透明表 DDIC、技术文档、按模板写 ABAP、激活循环；Open SQL 与内表字段必须由 metadata 驱动、禁止脱离元数据自由发挥。触发场景：用户要写 ABAP 代码（报表/类/函数/接口/增强）、从 FS 到部署、切换 SAP、配置或安装 MCP、login 失败。**MCP 未就绪时代理必须自动 npm build + 写 .mcp.json + 启动 rfc-proxy-server，不得把安装推给用户**。GitHub MCP：https://github.com/mario-andreschak/mcp-abap-abap-adt-api
+
+  语法速查（多版本兼容）：内置 [abap-syntax-quickref.md](abap-syntax-quickref.md)，覆盖 ECC → S4HANA → Cloud 全谱系，每个模式标注最低版本要求。阶段 4 写代码时作为**硬约束**参考，禁止凭记忆写语法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
 ---
 
-# SAP 报表自动化工作流（FS → 元数据 → 设计文档 → 代码 → 激活）
+# SAP ABAP 开发对象自动化工作流（FS → 元数据 → 设计文档 → 代码 → 激活）
+
+支持对象类型（由阶段 1.5 确认）：**REPORT**（可执行报表）、**CLAS**（类池/全局类）、**FUGR**（函数组含 Function Module）、**INTF**（接口）、**PROG/I**（Include）。
 
 ## 与 Eclipse ADT 的关系（术语一致、能力对齐）
 
@@ -400,89 +405,161 @@ node scripts/test_rfc.js
 - `The specified module could not be found: node.napi.node` → `node-rfc` 找不到 `sapnwrfc.dll`，**100% 是 NW RFC SDK 未安装或环境变量未设置**，与 npm 无关。
 - `npm install` 报错 `node-rfc` 编译失败 → Node.js 版本过低（需 ≥ 18）或缺少 Python/VC++ 构建工具（Windows 下 `npm install --global windows-build-tools` 或安装 Visual Studio Build Tools）。
 
-## 产物目录（按 FS/程序隔离；禁止全局混用）
+## 模板程序目录约定
 
-> **硬性规则**：每个报表程序拥有自己独立的产物目录，以**程序名（大写）**为隔离键。多份 FS 并存时不得共用同一文件。
+> **两个模板位置，用途不同，不要混淆。**
 
 ```
-output/<program>/spec/
-  functional-spec-raw.md          # 用户粘贴的 FS
-  functional-spec-ai.md           # 规范化后的功能说明（见下节结构）
-output/<program>/metadata/
-  tables/<TABNAME>.json           # 每表一份字段与键信息
-  performance-estimate.md         # 主表 COUNT 预估与分页建议
-output/<program>/docs/
-  tech-design.md                  # 表关系、取数逻辑、选择屏、ALV 要点
-  fs-coverage.md                  # FS 字段与代码逐项对齐审查
-  template-mapping.md             # 模板与新程序 INCLUDE 映射
-  deployment-config.md            # 开发包、传输请求、程序名
-  stage-gate.md                   # 该程序的阶段门禁状态
-output/<program>/abap/sources/    # 生成的源码（主程序 + INCLUDE）
+项目根目录
+├── templates/
+│   └── reference/                    ← 阶段 4 代码模板（ABAP 源码骨架）
+│       ├── ZSAP_FI244/               REPORT 参考模板（已有用户程序）
+│       │   ├── ZSAP_FI244.abap          主程序
+│       │   ├── ZSAP_FI244T01.abap       TOP Include
+│       │   ├── ZSAP_FI244SEL.abap       选择屏幕
+│       │   └── ZSAP_FI244F01.abap       FORM 子程序
+│       ├── ZCL_SKELETON/             CLASS 预置骨架
+│       │   └── ZCL_SKELETON.clas.abap   类定义 + 实现（单文件）
+│       ├── ZIF_SKELETON/             INTF 预置骨架
+│       │   └── ZIF_SKELETON.intf.abap   接口定义（单文件）
+│       └── ZFG_SKELETON/             FUGR 预置骨架
+│           ├── ZFG_SKELETON.fugr.abap   函数组主文件
+│           └── ZFM_SKELETON.fm.abap     Function Module
+│
+├── output/                           ← 阶段产出物（按对象名隔离）
+│   └── <OBJECT_NAME>/
+│       ├── spec/                     S1 功能规格
+│       ├── metadata/tables/          S2 表元数据
+│       ├── docs/                     S3 技术文档
+│       └── abap/                     S4 生成的源码（部署前）
+│
+└── .claude/skills/sap-report-automation-workflow/templates/
+    └── functional-spec-ai.md         ← S1 FS Markdown 模板（非 ABAP 代码）
 ```
 
-**示例**（程序名 `ZSAP_FIxxx`）：
+**规则**：
+- **ABAP 代码模板** → 放在 `templates/reference/<对象名>/`（项目根目录），子目录名为对象名大写
+- **FS Markdown 模板** → 放在 skill 内部的 `.claude/skills/.../templates/`，与 ABAP 代码无关
+- 用户可以把自己的参考程序通过 `getObjectSource` 拉取后放入 `templates/reference/`；代理在阶段 3.6 优先搜索此目录
+- `output/` 只放产物，**不放模板**
+
+### output/ 产物目录结构（按对象名隔离）
+
+语法用 `<object>` 统一指代目标开发对象名。
+
 ```
-output/ZSAP_FIxxx/spec/functional-spec-ai.md
-output/ZSAP_FIxxx/metadata/tables/BKPF.json
-output/ZSAP_FIxxx/metadata/performance-estimate.md
-output/ZSAP_FIxxx/docs/tech-design.md
-output/ZSAP_FIxxx/docs/fs-coverage.md
-output/ZSAP_FIxxx/docs/template-mapping.md
-output/ZSAP_FIxxx/docs/deployment-config.md
-output/ZSAP_FIxxx/docs/stage-gate.md
-output/ZSAP_FIxxx/abap/sources/
+output/<object>/
+├── spec/
+│   ├── functional-spec-raw.md      " 用户粘贴的原始 FS
+│   └── functional-spec-ai.md       " 规范化后的功能说明
+├── metadata/
+│   ├── tables/<TABNAME>.json       " 每表一份字段与键信息
+│   ├── tables/_errors.md           " 失败对象 + 补救记录
+│   └── performance-estimate.md     " 主表 COUNT 预估与分页建议
+├── docs/
+│   ├── tech-design.md              " 表关系、取数逻辑、字段契约
+│   ├── fs-coverage.md              " FS 字段与代码逐项对齐
+│   ├── template-mapping.md         " 模板与新对象 INCLUDE 映射
+│   ├── deployment-config.md        " 开发包、传输请求、对象名
+│   ├── stage-gate.md               " 阶段门禁状态
+│   └── smoke-test.md               " S5.5 冒烟测试结果
+└── abap/                           " 生成的源码（部署前）
+    ├── <name>.abap                 " REPORT: 主程序
+    ├── <name>T01.abap              " REPORT: TOP Include
+    ├── <name>SEL.abap              " REPORT: 选择屏幕
+    ├── <name>F01.abap              " REPORT: FORM 子程序
+    ├── <name>.clas.abap            " CLASS: 类定义+实现（单文件）
+    ├── <name>.intf.abap            " INTF: 接口定义（单文件）
+    ├── <name>.fugr.abap            " FUGR: 函数组主文件
+    └── <fm_name>.fm.abap           " FUGR: Function Module
 ```
 
-## 阶段 1：FS → 便于 AI 识别的功能文件
+## 阶段 1：获取 FS → 规范化为 AI 可读的功能文件
 
-将 `functional-spec-raw.md` 整理为 `functional-spec-ai.md`，可直接套用 [templates/functional-spec-ai.md](templates/functional-spec-ai.md)；**必须**包含下列区块（缺失则向用户追问）：
+### 1.0 获取 FS 来源（代理主动询问）
 
-1. **业务目标与报表类型**（清单 / 汇总 / 下载等）
-2. **选择条件**：字段、是否区间、是否必输、默认值、与表字段对应关系
-3. **输出列**：字段、来源表/字段、计算或转换规则
-4. **透明表与用途**：列出所有 `T`* 或明确透明表名；标注主从关系（若 FS 已写）
-5. **权限、性能、变式**等约束
+用户触发工作流后，代理第一件事是**主动询问 FS 来源**，支持以下方式：
+
+| 方式 | 用户操作 | 代理行为 |
+|------|---------|---------|
+| **A. 粘贴文本** | 直接在对话中粘贴 FS 内容 | 写入 `output/<object>/spec/functional-spec-raw.md` |
+| **B. 提供文件路径** | 给出 `.docx` / `.txt` / `.md` 文件路径 | 读取文件：`.docx` 走 `scripts/extract-docx.js`；`.txt`/`.md` 直接读 |
+| **C. 提供文件夹** | 给出包含多个 FS 文件的目录 | 列出目录内容，让用户选择要处理哪个 |
+| **D. 口头描述** | 用户用自然语言描述需求（无文档） | 代理直接生成 `functional-spec-ai.md`，标注 `来源=口头描述` |
+
+**询问模板**（代理据此发问，一次问完，不要逐条追问）：
+
+```
+请提供功能说明书（FS），支持以下方式：
+A. 直接粘贴 FS 文本
+B. 提供 FS 文件路径（支持 .docx / .txt / .md）
+C. 提供 FS 文件夹路径（我将列出文件供你选择）
+D. 口头描述需求（无需文档）
+```
+
+阶段 1.5 确定对象名之前，FS 内容存放在 `output/<object>/spec/`（对象名确认后创建）。用户可按自己习惯管理原始 FS 文件，不做强制路径约束。
+
+### 1.1 规范化 FS
+
+将 FS 整理为 `functional-spec-ai.md`，可直接套用 [templates/functional-spec-ai.md](templates/functional-spec-ai.md)；**必须**包含下列区块（缺失则向用户追问）：
+
+1. **业务目标与对象类型**（REPORT / CLASS / INTF / FUGR / FM）
+2. **选择条件**（REPORT 类型）：字段、是否区间、是否必输、默认值、与表字段对应关系
+3. **接口/方法签名**（CLASS / INTF / FUGR 类型）：方法名、参数、返回值、异常
+4. **输出列**：字段、来源表/字段、计算或转换规则
+5. **透明表与用途**：列出所有 `T`* 或明确透明表名；标注主从关系（若 FS 已写）
+6. **权限、性能、变式**等约束
 
 用稳定标题与列表，避免冗长叙述；表名一律 **大写**。
 
-## 阶段 1.5：程序名确认与 SAP 存在性检查（新增，硬门禁）
+## 阶段 1.5：对象名确认与 SAP 存在性检查（硬门禁；所有对象类型通用）
 
-> **位置**：`functional-spec-ai.md` 已确认、但 **尚未创建 `output/<program>/` 任何目录和文件** 之前。
-> **目的**：避免生成全套产物后才发现程序名冲突，导致全部重做或误覆盖。
+> **位置**：`functional-spec-ai.md` 已确认、但 **尚未创建 `output/<object>/` 任何目录和文件** 之前。
+> **目的**：避免生成全套产物后才发现对象名冲突，导致全部重做或误覆盖。
+> **适用范围**：REPORT、CLAS、FUGR、INTF 等所有 ADT 可创建的 ABAP 开发对象。
 
-### 1.5.1 从 FS 提取并确认程序名
+### 1.5.1 确定对象类型与命名规则
 
-代理从 `functional-spec-ai.md` 或用户指令中提取目标程序名（如 `ZSAP_FI086`）。
+代理从 `functional-spec-ai.md` 或用户指令中提取目标对象信息：
 
-- 若用户未显式指定程序名 → 代理根据 FS 编号和功能语义推荐一个（如 EE086 → `ZSAP_FI086`），**必须向用户确认**。
+| 对象类型 | ADT 类型码 | 命名约定 | 示例 |
+|---------|-----------|---------|------|
+| 可执行报表（Report） | `PROG/P` | `ZSAP_xxxx` / `ZFI_xxxx` | `ZSAP_FI086` |
+| Include | `PROG/I` | `ZSAP_xxxxT01` / `ZSAP_xxxxF01` | `ZSAP_FI086T01` |
+| 全局类（Class） | `CLAS` | `ZCL_xxxx` | `ZCL_FI_UTILITY` |
+| 函数组（Function Group） | `FUGR` | `ZFG_xxxx` | `ZFG_FI_TOOLS` |
+| 接口（Interface） | `INTF` | `ZIF_xxxx` | `ZIF_FI_DATA_ACCESS` |
+
+- 若用户未显式指定对象名 → 代理根据 FS 功能语义推荐命名（遵循上表约定），**必须向用户确认**。
 - 若用户已指定 → 直接采用，但仍需执行下一步存在性检查。
 
 ### 1.5.2 立即执行 SAP 存在性检查（**禁止跳过**）
 
-程序名一经确认，代理**必须立即**通过 MCP `searchObject` 查询 SAP 系统：
+对象名一经确认，代理**必须立即**通过 MCP `searchObject` 查询 SAP 系统：
 
-1. **主程序名**：`searchObject` 查询主程序名（如 `ZSAP_FI086`）。
-2. **Include 名**：`searchObject` 查询 `${progName}T01`、`${progName}SEL`、`${progName}F01`。
+1. **主对象**：`searchObject` 查询主对象名（如 `ZSAP_FI086` 或 `ZCL_FI_UTILITY`）。
+2. **关联子对象**（仅 REPORT 类型）：`searchObject` 查询 `${name}T01`、`${name}SEL`、`${name}F01`。
+3. **类池 Include**（仅 CLAS 类型）：类创建时系统自动生成 `CCDEF`/`CCIMP`/`CCAU` 等 Include，**不需单独检查**。
 
 **查询结果处理**：
 
 | 结果 | 动作 |
 |------|------|
-| 主程序或任一 Include **已存在** | **立即停止**，向用户报告：`程序 ZSAP_FI086 已存在于 SAP（包：XXX，描述：XXX）。` 必须让用户**重新提供新程序名**（如 `ZSAP_FI086A`），或**用户明确书面确认"覆盖已有程序"**后，方可继续。**禁止**代理擅自改程序名、追加字母/数字、或把"已存在"当警告跳过。 |
-| 主程序及所有 Include **均不存在** | 输出 `[OK] 程序名 ${progName} 在 SAP 中可用`，继续阶段 2。 |
+| 主对象或任一关联子对象 **已存在** | **立即停止**，向用户报告对象名、类型、所属包、描述。必须让用户**重新提供新对象名**，或**用户明确书面确认"覆盖已有对象"**后，方可继续。**禁止**代理擅自改对象名、追加字母/数字、或把"已存在"当警告跳过。 |
+| 主对象及所有关联子对象 **均不存在** | 输出 `[OK] ${objType} ${objName} 在 SAP 中可用`，继续阶段 2。 |
 
 ### 1.5.3 确认完毕后才开始生成产物
 
-**硬性规则**：只有在 `searchObject` 确认目标程序名（及所有 Include 名）在 SAP 中均**不存在**，或用户**书面确认覆盖**后，代理才允许：
+**硬性规则**：只有在 `searchObject` 确认目标对象名在 SAP 中**不存在**，或用户**书面确认覆盖**后，代理才允许：
 
-- 创建 `output/<program>/` 目录树
+- 创建 `output/<object>/` 目录树
 - 写入 `functional-spec-ai.md`、`metadata/`、`docs/` 等任何文件
 - 进入阶段 2 及以后
 
-**违反后果**：若跳过 1.5.2 直接生成产物，后续发现程序名冲突时，代理必须：
+**违反后果**：若跳过 1.5.2 直接生成产物，后续发现对象名冲突时，代理必须：
 1. 向用户道歉并说明冲突；
-2. 等待用户确认新程序名；
-3. 将已生成的全部产物**整体迁移**到新程序名目录（含文件内程序名替换）。
+2. 等待用户确认新对象名；
+3. 将已生成的全部产物**整体迁移**到新对象名目录（含文件内对象名替换）。
 
 ## 阶段 2：透明表列表与 DDIC 元数据
 
@@ -525,23 +602,162 @@ output/ZSAP_FIxxx/abap/sources/
 - **取数逻辑**：主查询顺序、JOIN/WHERE 要点（每条条件字段指向契约行）
 - **选择屏 ↔ 数据库** 映射表
 - **ALV/布局** 与字段契约列顺序一致
+- **性能设计**（新增，阶段 3 即设计，禁止留到阶段 4 临时处理）：
+  - **内表类型选择**：标注哪些内表需定义为 `SORTED TABLE` / `HASHED TABLE`、各自的主键/非唯一键字段
+  - **嵌套 LOOP 替代策略**：若逻辑涉及两张内表 N:M 关联，须在此设计替代方案（SORT + READ TABLE BINARY SEARCH / SORTED TABLE + READ TABLE KEY / INNER JOIN 前置到 Open SQL）
+  - **WHERE 条件排列**：主查询的 WHERE 字段顺序是否匹配目标表索引/主键顺序；避免否定条件（`<>`/`NOT`/`LIKE`）
+  - **主查询数据量预估**：引用 `metadata/performance-estimate.md`，标注数据量级与分页策略
 - **待确认项**（标为 TBD，**不得**在阶段 4 无契约实现）
 
-## 阶段 4：按模板创建程序（契约驱动，非创意驱动）
+## 阶段 4：按类型生成代码（契约驱动 + 语法速查，非创意驱动）
 
-1. **前置检查**：进入阶段 4 前，代理必须确认 `output/<program>/docs/deployment-config.md` 已存在且包含：目标包、传输请求（非 `$TMP` 时）、参考模板路径、新程序名。**禁止**在未确认开发包/请求号的状态下直接调用 `createObject`。
-2. **先打开** `output/<program>/docs/tech-design.md`（字段契约）与涉及的 `output/<program>/metadata/tables/*.json`，再动笔；**Open SQL、内表定义、LOOP 中使用的字段名**须与之一致。
-3. **模板来源**：以阶段 3.6 确认的模板为骨架（用户指定模板 或 Skill 默认模板 `templates/reference/ZSAP_FI244/`）；**业务 SELECT/JOIN/WHERE** 不得与契约和元数据冲突。
-4. **模板结构强约束**：若参考程序是"主程序 + INCLUDE 分层"（如 `xxxT01`/`xxxSEL`/`xxxF01`），新程序**源码生成阶段**必须保持同等分层（输出到 `output/<program>/abap/sources/`），以便审计与后续维护。
-   - 主程序：`ZSAP_FIxxx.abap`（含 `REPORT` 语句和 `INCLUDE` 引用）
-   - TOP 包含：`ZSAP_FIxxxT01.abap`
-   - 选择屏幕：`ZSAP_FIxxxSEL.abap`
-   - 子程序：`ZSAP_FIxxxF01.abap`
-   - 输出模块：`ZSAP_FIxxxO01.abap`（如使用 ALV）
-5. 生成前必须先写 `output/<program>/docs/template-mapping.md`，至少列出：`参考对象`、`新对象`、`对应 INCLUDE 清单`、`保留/替换说明`，以便审计"确实参照了模板格式"。
-6. **Eclipse ADT 侧同类操作在 MCP 中的顺序**（概念上）：`findObjectPath` / `createObject` → `lock` → `setObjectSource` → `syntaxCheckCode`。
-   - `createObject` 时按 `deployment-config.md` 传入 `devclass`（包）、`transport`（请求号）与 `description`（程序描述）；若包为 `$TMP`，传输请求字段留空或按 MCP schema 要求处理。
-7. 传输：`transport` / `transportReference` 按 MCP 工具要求传入。
+> **语法参考**：本阶段除「字段契约」+ `metadata/tables/*.json` 外，**必须以 [abap-syntax-quickref.md](abap-syntax-quickref.md) 为语法参考**——打开源码的同时打开本速查，禁止凭记忆写 SELECT / 内表 / OO 代码。速查覆盖 ECC → S4HANA → Cloud 全系，每个模式标注最低版本要求，按目标系统版本选择对应写法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
+>
+> **GUI Status 与文本元素**：ADT REST 无法创建 GUI 状态（SE41）和文本元素（SE32）。报表的 GUI 状态：
+> - **CL_SALV_TABLE**（首选）：自带标准工具栏，无需自定义 GUI 状态。
+> - 经典 ALV / CALL SCREEN：使用 `'STANDARD'`（系统预置 GUI 状态）。文本元素 TEXT-xxx 通过 SE32 手动创建或硬编码英文文本。
+
+### 4.0 对象类型分发（按阶段 1.5 确定的目标类型选择模板）
+
+代理在进入阶段 4 时**第一步**即确定目标对象类型，并选择对应的代码骨架：
+
+| 对象类型 | 代码文件 | 最低包含内容 | 参考模板 |
+|---------|---------|-------------|---------|
+| **REPORT** | 主程序 + T01/SEL/F01/O01 分层 | REPORT 语句 + INCLUDE 引用 + 选择屏 + ALV | `templates/reference/ZSAP_FI244/` |
+| **CLAS** | `zcl_xxx.clas.abap`（单文件含 DEF+IMP） | CLASS DEFINITION + PUBLIC/PROTECTED/PRIVATE + METHOD IMPLEMENTATION | 无固定模板 → 按 quickref §11 生成 |
+| **INTF** | `zif_xxx.intf.abap` | INTERFACE + METHODS + DATA + CONSTANTS | 用户参考或 quickref §12 |
+| **FUGR** | 函数组主文件 + 各 FM 文件 | FUNCTION-POOL + FUNCTION MODULE 定义 | 用户参考或 quickref §13 |
+
+**规则**：
+- REPORT 类型：沿用现有 INCLUDE 分层模板（4.1–4.5）
+- CLAS/INTF/FUGR 类型：走面向对象/函数模块生成路径（4.6–4.8），**不**强制 INCLUDE 分层
+- 若用户指定了参考模板 → 以参考模板为骨架（所有类型适用）
+
+### 4.1–4.5：REPORT 报表生成
+
+> 以下步骤适用于 REPORT 类型（`PROG/P`）。CLAS/INTF/FUGR 类型跳转到 4.6–4.8。
+
+1. **前置检查**：确认 `output/<object>/docs/deployment-config.md` 已存在。**禁止**在未确认开发包/请求号的状态下直接调用 `createObject`。
+2. **三步开写**：(a) 打开 `tech-design.md`（字段契约） → (b) 打开 `metadata/tables/*.json`（元数据） → (c) 打开 `abap-syntax-quickref.md`（语法参考）。三者对照写代码，禁止凭记忆编字段名或语法。
+3. **模板来源**：以阶段 3.6 确认的模板为骨架；**业务 SELECT/JOIN/WHERE** 不得与契约和元数据冲突。
+4. **INCLUDE 分层强约束**：参考程序的分层结构必须保留。
+   - 主程序：`<NAME>.abap`（REPORT 语句 + INCLUDE 引用）
+   - TOP：`<NAME>T01.abap`、SEL：`<NAME>SEL.abap`、F01：`<NAME>F01.abap`、O01：`<NAME>O01.abap`
+5. 生成前先写 `output/<object>/docs/template-mapping.md`。
+6. **反模式自检**：对照 quickref §14「性能反模式」逐项自查（LOOP 内 SELECT、FOR ALL ENTRIES 驱表空、隐式标准键等），任一项未通过 → 修正后再继续。
+7. **ADT 操作顺序**：`findObjectPath / createObject → lock → setObjectSource → syntaxCheckCode`。
+
+### 4.6：CLASS 类池生成（OO 模式）
+
+**适用场景**：用户要求创建全局类 `ZCL_xxx`（工具类、DAO、Service、Factory 等）。
+
+**必读**：[abap-syntax-quickref.md](abap-syntax-quickref.md) §11「全局类」+ §12「接口」
+
+**生成规则**：
+
+1. **单文件输出**：`output/<object>/abap/<name>.clas.abap`（一个文件包含 CLASS DEFINITION + CLASS IMPLEMENTATION）。
+2. **命名约定**：全局类 `ZCL_xxx`；若用户未指定 → 代理根据 FS 功能推荐，如 `ZCL_FI_JOURNAL_DAO`。
+3. **最低包含内容**（按 quickref §11 骨架）：
+   - `CLASS zcl_xxx DEFINITION PUBLIC FINAL CREATE PUBLIC.`
+   - `PUBLIC SECTION.` — `METHODS` / `CLASS-METHODS` / `CONSTANTS` / `TYPES`
+   - `PROTECTED SECTION.` / `PRIVATE SECTION.` — 内部类型、属性、方法
+   - `ENDCLASS.`
+   - `CLASS zcl_xxx IMPLEMENTATION.` — 所有方法的完整实现
+   - `ENDCLASS.`
+4. **推荐模式**（参考 34_OO_Design_Patterns）：
+   - **DAO/数据访问**：封装数据库表读取，方法如 `get_by_key( )`、`get_list( )`
+   - **Service**：封装业务逻辑，方法如 `calculate( )`、`validate( )`
+   - **Factory**：`CLASS-METHODS create RETURNING VALUE(ro) TYPE REF TO zcl_xxx`
+   - **Singleton**：`CLASS-METHODS get_instance RETURNING VALUE(ro) TYPE REF TO zcl_xxx` + 私有构造函数
+5. **异常处理**：若有外部调用（RFC / BAPI / DB），声明 `RAISING` 异常或 try/catch `CX_ROOT`。
+6. **元数据驱动**：类中若涉及 Open SQL，字段名仍须来自 `metadata/tables/*.json` + 字段契约。
+
+**部署**：使用 `scripts/deploy_rfc.js`（或 MCP 直接调用 `createObject` + `setObjectSource`），按 CLAS 类型处理。类激活后可在 SE24 中验证。
+
+### 4.7：INTF 接口生成
+
+**适用场景**：用户要求创建全局接口 `ZIF_xxx`（定义方法签名供其他类实现）。
+
+**必读**：[abap-syntax-quickref.md](abap-syntax-quickref.md) §12「接口」
+
+**生成规则**：
+
+1. **单文件输出**：`output/<object>/abap/<name>.intf.abap`
+2. **最低包含内容**：
+   - `INTERFACE zif_xxx PUBLIC.`
+   - `METHODS` / `CLASS-METHODS` 声明（含参数签名）
+   - `TYPES` / `CONSTANTS` / `DATA`（如有共享常量/类型）
+   - `ENDINTERFACE.`
+3. **注意**：接口中所有方法**只有签名，无实现**。实现交给 `CLASS ... IMPLEMENTATION`。
+4. 接口方法建议加 `RAISING` 声明异常类型，方便实现类传递错误。
+
+### 4.8：FUGR 函数组 / Function Module 生成
+
+**适用场景**：用户要求创建函数组及 Function Module（RFC 或本地）。
+
+**必读**：[abap-syntax-quickref.md](abap-syntax-quickref.md) §13「函数组与 Function Module」
+
+**生成规则**：
+
+1. **函数组主文件**：`output/<object>/abap/<name>.fugr.abap` — 含 `FUNCTION-POOL` 声明 + 全局数据定义。
+2. **每个 FM 一个文件**：`output/<object>/abap/<fm_name>.fm.abap` — 含完整 `FUNCTION ... ENDFUNCTION.`
+3. **FM 最低包含内容**：
+   - `FUNCTION <fm_name>.`
+   - `IMPORTING` / `EXPORTING` / `CHANGING` / `TABLES` 参数
+   - `EXCEPTIONS`（推荐使用 class-based exceptions 替代经典 exceptions）
+   - 业务逻辑（Open SQL、数据处理等）
+   - `ENDFUNCTION.`
+4. **RFC-enabled**：若为远程调用，FM 声明 `REMOTE` 标记。
+
+**部署**：FUGR 创建方式与 REPORT/CLAS 不同，agent 需通过 `scripts/deploy_rfc.js` 或 MCP 对应工具逐个创建函数组、再创建 FM。
+
+### 4.9：通用反模式自检（阶段 4 末尾强制，所有类型）
+
+代码写入文件后、调用 MCP 部署前，代理**必须**对照 [abap-syntax-quickref.md](abap-syntax-quickref.md) **§14「性能反模式」** 逐项自查（已按柏玺 ABAP 开发标准 V2.1 扩充）。
+
+**分级自查流程**（按 quickref §14.1–14.5 顺序，逐节检查，不得跳过）：
+
+**第一轮：DB 层（quickref §14.1）**
+- 所有 `SELECT` 都有 WHERE 条件且字段列表明确
+- 零 LOOP 内 SELECT
+- 零 `EXEC SQL ... END-EXEC`
+- 聚合使用了 SQL 函数（MAX/MIN/SUM/AVG），非手动 LOOP 累加
+- 每条 SELECT 后检查 `sy-subrc`
+
+**第二轮：WHERE 层（quickref §14.2）**
+- `FOR ALL ENTRIES` 前有 `IF ... IS NOT INITIAL`，驱动表已 SORT，结果已去重
+- WHERE 字段排列顺序匹配索引/主键顺序
+- 避免 `LIKE` / `NOT` / `<>`（确需时在代码注释中说明理由）
+- 已知完整主键优先 `SELECT SINGLE`
+
+**第三轮：内表层（quickref §14.3；新增嵌套 LOOP 替代分析）**
+- **嵌套 LOOP 分析**（此项为新增硬约束）：若代码中存在 `LOOP AT A ... LOOP AT B ... ENDLOOP. ENDLOOP.`，代理**必须**在 `tech-design.md` 的「性能设计」小节说明为何不能用 SORT + READ TABLE BINARY SEARCH 或 SORTED/HASHED TABLE 替代。无理由直接使用嵌套 LOOP → 视为反模式，修正后再进入部署。
+- 大结构 LOOP 使用 `ASSIGNING <fs>`（非 `INTO` 工作区）
+- 条件满足后无多余的无效循环（有 `EXIT` 及时退出）
+- 所有 `READ TABLE ... BINARY SEARCH` 前有对应的 `SORT` 语句
+- `READ TABLE` 优先使用 `WITH TABLE KEY` 或 `BINARY SEARCH`，非 `WITH KEY` 线性搜索
+- 无 `MOVE-CORRESPONDING` 滥用（大结构跨映射时逐字段手动赋值）
+- 无 `COLLECT` 误用（数值累加场景不需去重时改用 `APPEND`）
+
+**第四轮：控制流（quickref §14.4）**
+- 所有 `CASE` 有 `WHEN OTHERS` 兜底
+- 重复 IF 链（>3 个变体）改用 `CASE`，按概率降序排列 WHEN
+- 每个 FORM ≤ 200 行
+- 嵌套深度 ≤ 3 层（超过 → 拆解为独立子程序或用 `EXIT`/`CONTINUE` 降层）
+
+**第五轮：其他规范（quickref §14.5）**
+- 零 Hard Coding（动态值来自配置表 TVARVC 或选择屏参数）
+- 有 `AUTHORITY-CHECK` 权限检查
+- Z 表物理删除有 log 表记录
+- 选择屏有默认值或 `OBLIGATORY` 约束
+
+**任一轮未通过 → 修正源码后再继续；禁止未通过自检直接调 MCP 部署。**
+
+**OO 专属自查**（CLASS/FUGR 类型额外检查）：
+- 构造函数是否标记了 `CREATE PUBLIC/PROTECTED/PRIVATE`？
+- 方法参数是否完整类型化（避免 `TYPE ANY` 滥用）？
+- 是否避免了在方法中修改 IMPORTING 参数（引用传递规则）？
+- 异常是否通过 `RAISING` 声明而非静默吞掉？
 
 ## FS 对齐审查机制（新增，阶段 3.5，未通过禁止阶段 4）
 
@@ -585,14 +801,17 @@ output/ZSAP_FIxxx/abap/sources/
 
 **模板搜索顺序（代理必须执行，不可跳过）**：
 
-1. **搜索本地模板目录**：
-   - `templates/reference/<程序前缀>*/**/*.abap`
-   - `templates/**/*.abap`
-   - `output/ZSAP_FI244/abap/sources/`（遗留默认模板，如存在）
+1. **按对象类型搜索本地模板**：
+   - 所有类型：先搜 `templates/reference/<用户指定对象名>/`（用户指定的参考程序）
+   - REPORT：`templates/reference/ZSAP_FI244/`（项目默认 REPORT 模板）
+   - CLASS：`templates/reference/ZCL_SKELETON/`（项目预置 CLASS 骨架）
+   - INTF：`templates/reference/ZIF_SKELETON/`（项目预置 INTF 骨架）
+   - FUGR：`templates/reference/ZFG_SKELETON/`（项目预置 FUGR 骨架）
+   - 兜底：`templates/reference/**/*.abap`
 2. **搜索结果处理**：
    - **找到可用模板**：记录模板路径到 `deployment-config.md`，继续后续流程。
-   - **未找到任何模板**：**立即停止**，明确告知用户："未找到本地模板程序。请提供模板程序名（如 `ZSAP_FI244`）或模板目录路径，或确认无需模板直接生成。"
-   - **禁止**在未确认模板的情况下自行推断骨架并继续编码。
+   - **未找到任何模板**：REPORT 类型使用 quickref §8 骨架；CLASS/INTF/FUGR 类型使用 quickref §11–13 骨架生成。**不需要**停止流程。
+   - **有模板时优先用模板**，无模板时用 quickref 骨架——两种路径均合法。
 
 **用户主动提供模板时**：
 - 若用户提供程序名（如 `ZSAP_FI244`）：代理通过 `getObjectSource` 拉取该程序源码（含全部 INCLUDE），保存到 `templates/reference/<程序名>/`。
@@ -625,7 +844,7 @@ output/ZSAP_FIxxx/abap/sources/
 每阶段完成后必须落盘 `output/<program>/docs/stage-gate.md` 并打勾，未打勾禁止进入下一阶段。
 
 - 阶段 1 门禁：`output/<program>/spec/functional-spec-ai.md` 存在且包含选择条件/输出列/透明表清单。
-- 阶段 1.5 门禁：`output/<program>/docs/stage-gate.md` 中 `S1.5=program-name-confirmed: yes`，且 `deployment-config.md` 中的程序名已通过 `searchObject` 验证在 SAP 中不存在（或用户书面确认覆盖）。**S1.5 未通过 → 禁止创建 `output/<program>/` 任何目录和文件。**
+- 阶段 1.5 门禁：`output/<object>/docs/stage-gate.md` 中 `S1.5=object-name-confirmed: yes`，且 `deployment-config.md` 中的对象名已通过 `searchObject` 验证在 SAP 中不存在（或用户书面确认覆盖）。**S1.5 未通过 → 禁止创建 `output/<object>/` 任何目录和文件。**
 - 阶段 2 门禁：每张透明表对应 `output/<program>/metadata/tables/<TAB>.json` 或 `_errors.md` 有完整补救记录；`output/<program>/metadata/performance-estimate.md` 已生成（阶段 2.5）。
 - 阶段 3 门禁：`output/<program>/docs/tech-design.md` + `output/<program>/docs/fs-coverage.md` + `output/<program>/docs/template-mapping.md` 完整。
 - 阶段 3.6 门禁：`output/<program>/docs/deployment-config.md` 已生成，开发包/请求号/模板状态明确。
@@ -638,7 +857,7 @@ output/ZSAP_FIxxx/abap/sources/
 ```markdown
 S0=permission-check: yes/no
 S1=functional-spec-ready: yes/no
-S1.5=program-name-confirmed: yes/no
+S1.5=object-name-confirmed: yes/no
 S2=metadata-ready: yes/no
 S2.5=performance-estimate-ready: yes/no
 S3=tech-design-ready: yes/no
@@ -682,11 +901,12 @@ S5.5=smoke-test-passed: yes/no
 1. 执行 `node scripts/deploy_rfc.js [program]`。
 2. 脚本自动完成：创建主程序 → Lock → 上传主程序源码 → 创建 Include → 逐个 Lock/Upload/Unlock → Unlock 主程序 → **语法检查** → **激活** → **检查激活结果**。
 3. **脚本内部行为**：若程序已存在，脚本输出 `FATAL` 并 `process.exit(1)`；代理**禁止**修改脚本把报错降级为警告或自动继续。
-4. **语法检查（新增，激活前强制）**：
+4. **语法检查（激活前强制，红灯硬阻断）**：
    - 脚本对主程序及所有 Include 调用 ADT 语法检查（`POST .../source/main?method=check`）。
-   - 若任一对象存在语法错误 → **立即停止部署**，输出错误行号与消息，**不执行激活**。
+   - 若任一对象存在语法错误（`hasErrors=true`，含 `type="E"` / `type="A"` / `severity="error"` / `abapSyntaxError` / `<err>` 等全部指纹）→ **立即停止部署**（`process.exit(1)`），输出错误行号与消息，**严禁执行激活**。
    - 若端点返回 **405** → 标记 `unavailable`，记录日志，由激活阶段兜底验证语法（继续执行激活）。
-   - 代理必须先修复源码语法错误，再重新部署。
+   - 若 `hasErrors=true` 但 `errors` 数组为空（解析器无法提取详情），输出原始 XML（前 500 字符）便于调试，**仍视为失败阻断激活**。
+   - 代理必须先修复源码语法错误，再重新部署。**禁止**在语法检查未通过的情况下绕过脚本直接调 MCP `activateObjects`。
 5. **激活结果检查（新增，激活后强制）**：
    - 脚本解析激活响应，检查每个对象的激活状态。
    - 若激活返回失败（`severity=error`、`abapSyntaxError` 或对象状态非成功）→ **立即报告**，输出失败对象名与消息，标记部署失败。
@@ -707,6 +927,32 @@ S5.5=smoke-test-passed: yes/no
   - 锁/传输问题 → `unLock`、换请求或协调。
 4. 重复直至激活成功；可用 `inactiveObjects` 复核。
 5. **上限**：同一错误无进展重复超过约定次数（如 5 次）则停止自动重试，输出摘要请用户决策。
+
+### 5.3 锁管理（Lock Handle 持久化与恢复）
+
+> **核心问题**：ADT Lock Handle 在进程内存中获取，若部署中断/崩溃，Handle 丢失后无法解锁，对象长期被锁。
+
+**实现机制（三层防护）**：
+
+| 层级 | 触发条件 | 行为 |
+|------|---------|------|
+| **L1 持久化** | 每次 `lockObject` 成功时 | 自动写入 `.locks/<name>.json`（uri + handle + 时间戳） |
+| **L2 自动恢复** | `unlockObject` 未收到 handle | 从 `.locks/` 文件加载 handle 再解锁 |
+| **L3 全量清理** | 手动执行脚本 | `node scripts/release_locks.js` 三阶段级联：store → ADT 查询 → RFC DEQUEUE_ALL |
+
+**文件结构**：
+
+```
+.locks/
+  ├── zsap_fi254.json        # {"uri": "...", "handle": "...", "time": "..."}
+  ├── zsap_fi254t01.json
+  └── zsap_fi254f01.json
+```
+
+**代理行为**：
+- `deploy_rfc.js` 崩溃时 → 错误日志列出残留锁 + 提示运行 `release_locks.js`
+- 用户报告"对象被锁" → 代理先检查 `.locks/` 是否有记录，如有则用 handle 解锁；如无则运行 `release_locks.js --force`（DEQUEUE_ALL）
+- `.locks/` 目录已加入 `.gitignore`，不会提交到 Git
 
 ## 阶段 5.5：冒烟测试（新增，激活后强制）
 
@@ -788,8 +1034,10 @@ S5.5=smoke-test-passed: yes/no
 
 ## 延伸阅读
 
+- **ABAP 语法速查（阶段 4 必备）**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 精选自 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)，覆盖 SELECT / 内表 / ALV / WHERE / 性能反模式。
 - RFC 参数、Eclipse ADT / ADT REST 与 abapify CLI 要点：[reference.md](reference.md)
 - **MCP 参数契约与易错点**（读 schema、禁止猜参数名）：[mcp-contract.md](mcp-contract.md)
+- **官方完整速查表**：[SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)（37 个 .md 速查表 + src/ 可执行实验代码）— 遇到本 quickref 未覆盖的语法问题时追查。
 
 ## 附录：RFC 直连 ADT REST 部署模式（SADT_REST_RFC_ENDPOINT）
 
@@ -840,16 +1088,31 @@ const body = resp.MESSAGE_BODY
 | Unlock | POST | `/sap/bc/adt/programs/programs/{name}?_action=UNLOCK&lockHandle={handle}` | `application/vnd.sap.as+xml` |
 | 激活 | POST | `/sap/bc/adt/activation?method=activate&preauditRequested=true` | `application/vnd.sap.adt.activation+xml` |
 
-### 程序类型映射
+### 对象类型映射与命名约定
 
-| 类型 | 代码 |
-|------|------|
-| executable（可执行程序） | `1` |
-| include（包含程序） | `I` |
-| module pool | `M` |
-| function group | `F` |
-| class pool | `K` |
-| interface pool | `J` |
+| ADT 类型码 | ADT URI 前缀 | 说明 | 命名约定 | 本 Skill 支持 |
+|-----------|-------------|------|---------|-------------|
+| `PROG/P` | `/sap/bc/adt/programs/programs/` | 可执行程序 | `ZSAP_xxx` / `ZFI_xxx` | **是（REPORT）** |
+| `PROG/I` | `/sap/bc/adt/programs/includes/` | Include | `ZSAP_xxxT01` 等 | **是** |
+| `CLAS` | `/sap/bc/adt/oo/classes/` | 全局类 | `ZCL_xxx` | **是** |
+| `INTF` | `/sap/bc/adt/oo/interfaces/` | 接口 | `ZIF_xxx` | **是** |
+| `FUGR` | `/sap/bc/adt/functions/groups/` | 函数组 | `ZFG_xxx` | **是** |
+| `FUNC` | `/sap/bc/adt/functions/groups/<fugr>/fmodules/` | Function Module | 任意（与函数组关联） | **是** |
+| `TABL` | `/sap/bc/adt/ddic/tables/` | 透明表 | 任意 | 仅读取 |
+| `ENHO` | `/sap/bc/adt/enhancements/enhs/` | 增强实现 | 任意 | 仅读取 |
+
+### ADT REST 端点（按对象类型）
+
+| 操作 | 对象类型 | 方法 | URI |
+|------|---------|------|-----|
+| 创建 | PROG/P | POST | `/sap/bc/adt/programs/programs` |
+| 创建 | PROG/I | POST | `/sap/bc/adt/programs/includes` |
+| 创建 | CLAS | POST | `/sap/bc/adt/oo/classes` |
+| 创建 | INTF | POST | `/sap/bc/adt/oo/interfaces` |
+| 创建 | FUGR | POST | `/sap/bc/adt/functions/groups` |
+| Lock | ALL | POST | `{objectUri}?_action=LOCK&accessMode=MODIFY` |
+| 上传源码 | ALL | PUT | `{objectUri}/source/main?lockHandle={handle}` |
+| 激活 | ALL | POST | `/sap/bc/adt/activation?method=activate&preauditRequested=true` |
 
 ### 故障排查速查表
 

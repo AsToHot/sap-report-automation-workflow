@@ -1,54 +1,35 @@
 
-**** Log file opened at 2026-04-24 19:48:13.724023 UTC+08:00 (ÖÐ¹ú±ê×¼Ê±¼ä), Encoding UTF-8
+**** Log file opened at 2026-05-28 14:07:31.259877 UTC+08:00 (ÖÐ¹ú±ê×¼Ê±¼ä), Encoding UTF-8
 NW RFC Library: SDK variant, Release 750 Patch Level 6, Compiled on Feb  5 2020 20:20:33
  CPIC library: 753.2019.10.14 version 3, NI library: 40, Kernel Release: 753 Patch Level 525
  Current working directory: E:\ABAP工作流, Program: node
  Hardware: PC with Windows NT 18x AMD64 Level 6 (Mod 170 Step 4), Operating_system: Windows NT 10.0
- Hostname: THINKPAD, IP address: 192.168.1.21, IPv6 address: fe80::d55f:c9f3:b5d7:f4ca
+ Hostname: THINKPAD, IP address: 100.92.97.3, IPv6 address: fe80::d55f:c9f3:b5d7:f4ca
 
-2026-04-24 19:48:13.724675 [60296] >> Info entry
+2026-05-28 14:07:31.260579 [32620] >> Info entry
 	Did not find config file E:\ABAP工作流\sapnwrfc.ini.
-2026-04-24 19:48:30.426834 [46344] >> Error entry
-	[Handle: 2279642240288	ConvID: 	Target: 	SysID: 	SysNr: 	User: 	Codepage: 4103]
-	RfcCommunicationException: Return Value: 20, Code: RFC_COMMUNICATION_FAILURE, Message: 
-LOCATION    CPIC (TCP/IP) on local host ThinkPad with Unicode
-ERROR       connection to partner '210.75.21.252:3299' broken
-TIME        Fri Apr 24 19:48:30 2026
-RELEASE     753
-COMPONENT   NI (network interface)
-VERSION     40
-RC          -6
-MODULE      D:/depot/bas/753_REL/src/base/ni/nixxi.cpp
-LINE        5429
-DETAIL      NiIRead: P=210.75.21.252:3299; L=192.168.1.21:50630
-SYSTEM CALL recv
-ERRNO       10054
-ERRNO TEXT  WSAECONNRESET: Connection reset by peer
-COUNTER     2
 
-
-**** Log file opened at 2026-04-24 19:55:36.996776 UTC+08:00 (ÖÐ¹ú±ê×¼Ê±¼ä), Encoding UTF-8
+**** Log file opened at 2026-05-28 14:27:54.931668 UTC+08:00 (ÖÐ¹ú±ê×¼Ê±¼ä), Encoding UTF-8
 NW RFC Library: SDK variant, Release 750 Patch Level 6, Compiled on Feb  5 2020 20:20:33
  CPIC library: 753.2019.10.14 version 3, NI library: 40, Kernel Release: 753 Patch Level 525
  Current working directory: E:\ABAP工作流, Program: node
  Hardware: PC with Windows NT 18x AMD64 Level 6 (Mod 170 Step 4), Operating_system: Windows NT 10.0
- Hostname: THINKPAD, IP address: 192.168.1.21, IPv6 address: fe80::d55f:c9f3:b5d7:f4ca
+ Hostname: THINKPAD, IP address: 100.92.97.3, IPv6 address: fe80::d55f:c9f3:b5d7:f4ca
 
-2026-04-24 19:55:36.996894 [80220] >> Error entry
-	[Handle: 2788585821120	ConvID: 	Target: 	SysID: 	SysNr: 	User: 	Codepage: 4103]
-	RfcCommunicationException: Return Value: 20, Code: RFC_COMMUNICATION_FAILURE, Message: 
-LOCATION    CPIC (TCP/IP) on local host ThinkPad with Unicode
-ERROR       partner '10.32.21.11:3300' not reached
-TIME        Fri Apr 24 19:55:36 2026
-RELEASE     753
-COMPONENT   NI (network interface)
-VERSION     40
-RC          -10
-MODULE      D:/depot/bas/753_REL/src/base/ni/nixxi.cpp
-LINE        3449
-DETAIL      NiPConnect2: 10.32.21.11:3300
-SYSTEM CALL connect
-ERRNO       10060
-ERRNO TEXT  WSAETIMEDOUT: Connection timed out
-COUNTER     2
+2026-05-28 14:27:54.931872 [43812] >> Error entry
+	[Handle: 2081896214064	ConvID: 86207618	Target: fmsapp1dev	SysID: EFD	SysNr: 00	User: ITL12	Mandant: 200	Language: 1	SAPRouter: /H/210.75.21.252	Codepage: 4103]
+	RfcABAPException: Key: FU_NOT_FOUND, Code: RFC_ABAP_EXCEPTION, Message: ID:FL Type:E Number:046 TH_ENQUEUE
 
+**** Log file opened at 2026-05-28 14:34:54.703686 UTC+08:00 (ÖÐ¹ú±ê×¼Ê±¼ä), Encoding UTF-8
+NW RFC Library: SDK variant, Release 750 Patch Level 6, Compiled on Feb  5 2020 20:20:33
+ CPIC library: 753.2019.10.14 version 3, NI library: 40, Kernel Release: 753 Patch Level 525
+ Current working directory: E:\ABAP工作流, Program: node
+ Hardware: PC with Windows NT 18x AMD64 Level 6 (Mod 170 Step 4), Operating_system: Windows NT 10.0
+ Hostname: THINKPAD, IP address: 100.92.97.3, IPv6 address: fe80::d55f:c9f3:b5d7:f4ca
+
+2026-05-28 14:34:54.703764 [27636] >> Error entry
+	[Handle: 2095464817408	ConvID: 86663266	Target: fmsapp1dev	SysID: EFD	SysNr: 00	User: ITL12	Mandant: 200	Language: 1	SAPRouter: /H/210.75.21.252	Codepage: 4103]
+	RfcABAPException: Key: FU_NOT_FOUND, Code: RFC_ABAP_EXCEPTION, Message: ID:FL Type:E Number:046 TH_DEQUEUE
+2026-05-28 14:34:54.713560 [13048] >> Error entry
+	[Handle: 2095464817408	ConvID: 86663266	Target: fmsapp1dev	SysID: EFD	SysNr: 00	User: ITL12	Mandant: 200	Language: 1	SAPRouter: /H/210.75.21.252	Codepage: 4103]
+	RfcABAPException: Key: FU_NOT_FOUND, Code: RFC_ABAP_EXCEPTION, Message: ID:FL Type:E Number:046 TH_ENQUEUE_DELETE
