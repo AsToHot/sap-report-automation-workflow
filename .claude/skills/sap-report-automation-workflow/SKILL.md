@@ -617,10 +617,15 @@ D. 口头描述需求（无需文档）
 
 > **语法参考**：本阶段除「字段契约」+ `metadata/tables/*.json` 外，**必须以 [abap-syntax-quickref.md](abap-syntax-quickref.md) 为语法参考**——打开源码的同时打开本速查，禁止凭记忆写 SELECT / 内表 / OO 代码。速查覆盖 ECC → S4HANA → Cloud 全系，每个模式标注最低版本要求，按目标系统版本选择对应写法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
 >
-> **GUI Status 与文本元素（硬约束）**：ADT REST **无法**创建 GUI 状态（SE41）和文本元素（SE32）。
-> - **CL_SALV_TABLE**（首选）：自带标准工具栏，**禁止**调用 `set_screen_status`。SALV 的工具栏是内置的，不需要也不应该指定外部 GUI Status。
-> - 经典 ALV（REUSE_ALV_GRID_DISPLAY）：不可用，因为没有 GUI Status。
-> - 文本元素 TEXT-xxx：ADT 部署后需在 SE80/SE32 手动维护，或代码中用硬编码字符串代替。
+> **GUI Status 与文本元素**：ADT REST 无法创建 GUI 状态（SE41）和文本元素（SE32）。CL_SALV_TABLE 使用 SAP 标准 ALV GUI Status：
+> ```abap
+> gr_alv->set_screen_status(
+>   pfstatus      = 'STANDARD'
+>   report        = 'SAPLSLVC_FULLSCREEN'
+>   set_functions = gr_alv->c_functions_all
+> ).
+> ```
+> `report` **必须**是 `'SAPLSLVC_FULLSCREEN'`（SAP 标准 ALV 函数组），**不能**是 `sy-repid`。文本元素 TEXT-xxx 需在 SE80/SE32 手动维护。
 
 ### 4.0 对象类型分发（按阶段 1.5 确定的目标类型选择模板）
 

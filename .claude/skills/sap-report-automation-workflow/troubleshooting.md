@@ -157,26 +157,23 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:9876/sap/bc/adt/discover
 
 生成代码前，在 metadata JSON 中找到每个字段对应的 `ROLLNAME` 值，直接作为 TYPE 引用。
 
-### 卡点：CL_SALV_TABLE 调 `set_screen_status` 引用不存在的 GUI Status（硬约束，不可再犯）
+### 卡点：CL_SALV_TABLE 的 `set_screen_status` 写错 `report` 参数
 
-**现象**：代码写 `gr_alv->set_screen_status( pfstatus = 'STANDARD' ... )`，但 ADT REST **无法创建** GUI Status（SE41）。程序中不存在该 GUI Status，运行时可能 dump。
+**现象**：代码写 `gr_alv->set_screen_status( pfstatus = 'STANDARD' report = sy-repid ... )`，但 `sy-repid` 指向自己的程序（如 ZTEST102），其中不存在 `STANDARD` GUI Status。运行时 ALV 工具栏不可用或 dump。
 
-**根因**：从旧模板（如 ZSAP_FI244 的 `'S1000'`）照搬。旧程序通过 SE80 手工创建了 GUI Status，ADT 部署的新程序没有。
+**根因**：照搬旧模板代码但用错了 `report` 参数。`STANDARD` GUI Status 是 SAP 标准 ALV 函数组 `SAPLSLVC_FULLSCREEN` 内置的，不是每个程序自带的。
 
-**预防（硬规则）**：
-- **CL_SALV_TABLE 自带标准工具栏**，**永远不要**调 `set_screen_status`。
-- 若需控制按钮，用 `gr_alv->get_functions( )->set_all( abap_true )` 等 SALV 内置方法。
-- 模板 ZSAP_FI244 中的 `'S1000'` 是**反例**——手工在 SE41 创建，ADT 下不可复制。
-
-**正确写法**：
+**预防（标准写法）**：
 ```abap
-" CL_SALV_TABLE 自带工具栏，无需 set_screen_status
-cl_salv_table=>factory( IMPORTING r_salv_table = gr_alv CHANGING t_table = gt_out ).
-gr_alv->get_columns( )->set_optimize( 'X' ).
-gr_alv->display( ).
+" ✅ 正确：绑定 SAP 标准 ALV GUI Status
+gr_alv->set_screen_status(
+  pfstatus      = 'STANDARD'
+  report        = 'SAPLSLVC_FULLSCREEN'
+  set_functions = gr_alv->c_functions_all
+).
 ```
 
-**应对**：已部署代码写了 `set_screen_status` → 删除该调用，重新上传 F01 并激活。
+**规则**：`report` **必须**是 `'SAPLSLVC_FULLSCREEN'`（SAP 标准 ALV 函数组），**不是** `sy-repid`。
 
 ### 卡点：new OpenSQL 要求逗号分隔字段列表（7.40+）
 
