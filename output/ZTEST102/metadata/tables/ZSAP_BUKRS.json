@@ -1,0 +1,47 @@
+{
+  "tabname": "ZSAP_BUKRS",
+  "fields": [
+    {
+      "FIELDNAME": "MANDT",
+      "KEYFLAG": "X",
+      "DATATYPE": "CLNT",
+      "LENG": 3
+    },
+    {
+      "FIELDNAME": "BUKRS",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "PRCTR",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "LTEXT",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "ZFGS",
+      "DATATYPE": "CHAR",
+      "LENG": 1
+    },
+    {
+      "FIELDNAME": "ZZGS",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "BUTXT",
+      "DATATYPE": "CHAR",
+      "LENG": 25
+    },
+    {
+      "FIELDNAME": "ZSYS",
+      "DATATYPE": "CHAR",
+      "LENG": 1
+    }
+  ]
+}

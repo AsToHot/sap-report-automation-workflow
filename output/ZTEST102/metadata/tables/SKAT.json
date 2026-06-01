@@ -1,0 +1,44 @@
+{
+  "tabname": "SKAT",
+  "fields": [
+    {
+      "FIELDNAME": "MANDT",
+      "KEYFLAG": "X",
+      "DATATYPE": "CLNT",
+      "LENG": 3
+    },
+    {
+      "FIELDNAME": "SPRAS",
+      "KEYFLAG": "X",
+      "DATATYPE": "LANG",
+      "LENG": 1
+    },
+    {
+      "FIELDNAME": "KTOPL",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "SAKNR",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "TXT20",
+      "DATATYPE": "CHAR",
+      "LENG": 20
+    },
+    {
+      "FIELDNAME": "TXT50",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "MCOD1",
+      "DATATYPE": "CHAR",
+      "LENG": 25
+    }
+  ]
+}

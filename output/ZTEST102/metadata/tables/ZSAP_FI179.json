@@ -1,0 +1,380 @@
+{
+  "tabname": "ZSAP_FI179",
+  "fields": [
+    {
+      "FIELDNAME": "MANDT",
+      "KEYFLAG": "X",
+      "DATATYPE": "CLNT",
+      "LENG": 3
+    },
+    {
+      "FIELDNAME": "FLNUM",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "RBUKRS",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "RLTEXT",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "RYEAR",
+      "KEYFLAG": "X",
+      "DATATYPE": "NUMC",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "POPER",
+      "KEYFLAG": "X",
+      "DATATYPE": "NUMC",
+      "LENG": 3
+    },
+    {
+      "FIELDNAME": "DOCNR",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "DOCLN",
+      "KEYFLAG": "X",
+      "DATATYPE": "CHAR",
+      "LENG": 6
+    },
+    {
+      "FIELDNAME": "BUKRS",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "LTEXT",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "BUDAT",
+      "DATATYPE": "DATS",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "CPUDT",
+      "DATATYPE": "DATS",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "AEDAT",
+      "DATATYPE": "DATS",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "REVIEWER",
+      "DATATYPE": "CHAR",
+      "LENG": 12
+    },
+    {
+      "FIELDNAME": "PREPARER",
+      "DATATYPE": "CHAR",
+      "LENG": 12
+    },
+    {
+      "FIELDNAME": "POSTER",
+      "DATATYPE": "CHAR",
+      "LENG": 12
+    },
+    {
+      "FIELDNAME": "APPROVER",
+      "DATATYPE": "CHAR",
+      "LENG": 12
+    },
+    {
+      "FIELDNAME": "OPERATOR",
+      "DATATYPE": "CHAR",
+      "LENG": 12
+    },
+    {
+      "FIELDNAME": "ATTCHNUM",
+      "DATATYPE": "INT4",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "ADJUST_FLG",
+      "DATATYPE": "CHAR",
+      "LENG": 2
+    },
+    {
+      "FIELDNAME": "VERNUM",
+      "DATATYPE": "CHAR",
+      "LENG": 5
+    },
+    {
+      "FIELDNAME": "BUSTYPE",
+      "DATATYPE": "CHAR",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "XREVERSAL",
+      "DATATYPE": "CHAR",
+      "LENG": 1
+    },
+    {
+      "FIELDNAME": "BLART",
+      "DATATYPE": "CHAR",
+      "LENG": 2
+    },
+    {
+      "FIELDNAME": "ZVOUTY",
+      "DATATYPE": "CHAR",
+      "LENG": 20
+    },
+    {
+      "FIELDNAME": "BKTXT",
+      "DATATYPE": "CHAR",
+      "LENG": 25
+    },
+    {
+      "FIELDNAME": "RACCT",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "RACCT_TXT",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "WAERS",
+      "DATATYPE": "CUKY",
+      "LENG": 5
+    },
+    {
+      "FIELDNAME": "TSL",
+      "DATATYPE": "CURR",
+      "LENG": 23,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "HSL_S",
+      "DATATYPE": "CURR",
+      "LENG": 15,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "HSL_H",
+      "DATATYPE": "CURR",
+      "LENG": 15,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "KOSTL",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "KOSTL_TXT",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "PRCTR",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "PRCTR_TXT",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "SGTXT",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "MATNR",
+      "DATATYPE": "CHAR",
+      "LENG": 18
+    },
+    {
+      "FIELDNAME": "MAKTX",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "KTOKD",
+      "DATATYPE": "CHAR",
+      "LENG": 4
+    },
+    {
+      "FIELDNAME": "KTOKD_TXT",
+      "DATATYPE": "CHAR",
+      "LENG": 30
+    },
+    {
+      "FIELDNAME": "ZYHZH",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "ORGNAME",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "MATKL",
+      "DATATYPE": "CHAR",
+      "LENG": 9
+    },
+    {
+      "FIELDNAME": "WGBEZ60",
+      "DATATYPE": "CHAR",
+      "LENG": 60
+    },
+    {
+      "FIELDNAME": "LIFNR_FI",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "NAME1_LIF_FI",
+      "DATATYPE": "CHAR",
+      "LENG": 35
+    },
+    {
+      "FIELDNAME": "KUNNR_FI",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "NAME1_KUR_FI",
+      "DATATYPE": "CHAR",
+      "LENG": 35
+    },
+    {
+      "FIELDNAME": "HKONT_BKN",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "HKONT_FDN",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "KUNNR",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "NAME1_KUR",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "LIFNR",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "NAME1_LIF",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "EXPENSECODE",
+      "DATATYPE": "CHAR",
+      "LENG": 20
+    },
+    {
+      "FIELDNAME": "EXPENSENAME",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "ANLKL",
+      "DATATYPE": "CHAR",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "NAME1_ANL",
+      "DATATYPE": "CHAR",
+      "LENG": 50
+    },
+    {
+      "FIELDNAME": "LIFNR_PA",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "NAME1_LIF_PA",
+      "DATATYPE": "CHAR",
+      "LENG": 40
+    },
+    {
+      "FIELDNAME": "MEINS",
+      "DATATYPE": "UNIT",
+      "LENG": 3
+    },
+    {
+      "FIELDNAME": "PRICE",
+      "DATATYPE": "CURR",
+      "LENG": 13,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "MENGE",
+      "DATATYPE": "QUAN",
+      "LENG": 13,
+      "DECIMALS": 3
+    },
+    {
+      "FIELDNAME": "PAYMETHOD",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "XBLNR",
+      "DATATYPE": "CHAR",
+      "LENG": 16
+    },
+    {
+      "FIELDNAME": "RAT_TYPE",
+      "DATATYPE": "CHAR",
+      "LENG": 8
+    },
+    {
+      "FIELDNAME": "RAT",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    },
+    {
+      "FIELDNAME": "BUSNUM",
+      "DATATYPE": "CHAR",
+      "LENG": 64
+    },
+    {
+      "FIELDNAME": "ABSLIB",
+      "DATATYPE": "CHAR",
+      "LENG": 20
+    },
+    {
+      "FIELDNAME": "ZFKYH",
+      "DATATYPE": "CHAR",
+      "LENG": 64
+    },
+    {
+      "FIELDNAME": "ACCTDIM",
+      "DATATYPE": "CHAR",
+      "LENG": 10
+    }
+  ],
+  "fetched_count": 72,
+  "matched": true
+}
