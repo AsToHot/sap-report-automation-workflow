@@ -161,19 +161,19 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:9876/sap/bc/adt/discover
 
 **现象**：代码写 `gr_alv->set_screen_status( pfstatus = 'STANDARD' report = sy-repid ... )`，但 `sy-repid` 指向自己的程序（如 ZTEST102），其中不存在 `STANDARD` GUI Status。运行时 ALV 工具栏不可用或 dump。
 
-**根因**：照搬旧模板代码但用错了 `report` 参数。`STANDARD` GUI Status 是 SAP 标准 ALV 函数组 `SAPLSLVC_FULLSCREEN` 内置的，不是每个程序自带的。
+**根因**：照搬旧模板代码但用错了 `report` 参数。`STANDARD` GUI Status 是 SAP 标准 ALV 函数组 `SAPLKKBL` 内置的，不是每个程序自带的。
 
 **预防（标准写法）**：
 ```abap
 " ✅ 正确：绑定 SAP 标准 ALV GUI Status
 gr_alv->set_screen_status(
   pfstatus      = 'STANDARD'
-  report        = 'SAPLSLVC_FULLSCREEN'
+  report        = 'SAPLKKBL'
   set_functions = gr_alv->c_functions_all
 ).
 ```
 
-**规则**：`report` **必须**是 `'SAPLSLVC_FULLSCREEN'`（SAP 标准 ALV 函数组），**不是** `sy-repid`。
+**规则**：`report` **必须**是 `'SAPLKKBL'`（SAP 标准 ALV 函数组），**不是** `sy-repid`。
 
 ### 卡点：new OpenSQL 要求逗号分隔字段列表（7.40+）
 

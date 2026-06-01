@@ -621,11 +621,11 @@ D. 口头描述需求（无需文档）
 > ```abap
 > gr_alv->set_screen_status(
 >   pfstatus      = 'STANDARD'
->   report        = 'SAPLSLVC_FULLSCREEN'
+>   report        = 'SAPLKKBL'
 >   set_functions = gr_alv->c_functions_all
 > ).
 > ```
-> `report` **必须**是 `'SAPLSLVC_FULLSCREEN'`（SAP 标准 ALV 函数组），**不能**是 `sy-repid`。文本元素 TEXT-xxx 需在 SE80/SE32 手动维护。
+> `report` **必须**是 `'SAPLKKBL'`（SAP 标准 ALV 函数组），**不能**是 `sy-repid`。文本元素 TEXT-xxx 需在 SE80/SE32 手动维护。
 
 ### 4.0 对象类型分发（按阶段 1.5 确定的目标类型选择模板）
 
