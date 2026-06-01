@@ -1,0 +1,18 @@
+{
+  "tabname": "LFA1",
+  "source": "DD03L via runQuery",
+  "essential_fields": {
+    "LIFNR": "CHAR 10 KEY",
+    "NAME1": "CHAR 35",
+    "KTOKK": "CHAR 4",
+    "LAND1": "CHAR 3",
+    "ORT01": "CHAR 35",
+    "STRAS": "CHAR 35",
+    "PSTLZ": "CHAR 10",
+    "REGIO": "CHAR 3",
+    "SPRAS": "LANG 1",
+    "LOEVM": "CHAR 1",
+    "SPERR": "CHAR 1",
+    "KUNNR": "CHAR 10"
+  }
+}
