@@ -5,6 +5,8 @@ description: |
   End-to-end SAP ABAP 开发对象自动化（与 Eclipse ADT 能力对齐）：通过本地 RFC 代理将 HTTP ADT REST 请求转译为 RFC SADT_REST_RFC_ENDPOINT 调用 SAP；支持 **REPORT 报表**、**CLASS 类池**、**FUGR 函数组 / Function Module**、**INTF 接口**、**Include** 等全部常见 ABAP 开发对象类型。FS 规范化、透明表 DDIC、技术文档、按模板写 ABAP、激活循环；Open SQL 与内表字段必须由 metadata 驱动、禁止脱离元数据自由发挥。触发场景：用户要写 ABAP 代码（报表/类/函数/接口/增强）、从 FS 到部署、切换 SAP、配置或安装 MCP、login 失败。**MCP 未就绪时代理必须自动 npm build + 写 .mcp.json + 启动 rfc-proxy-server，不得把安装推给用户**。GitHub MCP：https://github.com/mario-andreschak/mcp-abap-abap-adt-api
 
   语法速查（多版本兼容）：内置 [abap-syntax-quickref.md](abap-syntax-quickref.md)，覆盖 ECC → S4HANA → Cloud 全谱系，每个模式标注最低版本要求。阶段 4 写代码时作为**硬约束**参考，禁止凭记忆写语法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
+
+  卡点速查：多轮实战沉淀的常见阻塞与提速方案见 [troubleshooting.md](troubleshooting.md)——代理在任一阶段受阻（MCP 不通、元数据拉取慢、表名混淆报错、激活失败等），**必须先查阅该文件**按"预判→预防→应对"处理，再继续。
 ---
 
 # SAP ABAP 开发对象自动化工作流（FS → 元数据 → 设计文档 → 代码 → 激活）
@@ -55,6 +57,8 @@ description: |
 2. **未**对 FS 中出现的每张透明表完成元数据落盘（`output/<program>/metadata/tables/<TABNAME>.json`，失败则写入 `_errors.md` 并处理）→ **禁止**进入阶段 4。
 3. **未**写出 `output/<program>/docs/tech-design.md`（含 **字段契约** 小节、关联、WHERE、选择屏映射、穿透/异常）→ **禁止**进入阶段 4。
 4. 阶段 4–5：必须实际调用 MCP（`syntaxCheckCode`、`lock`、`setObjectSource`、`activate*` 等），并在失败时按 Skill **自动修错循环**，直至成功或达到重试上限。
+
+**受阻即查**：以上任一步骤遇到阻塞、报错或反复重试无进展，**必须先打开 [troubleshooting.md](troubleshooting.md)** 按阶段查找对应的"预判→预防→应对"方案，再继续。不得在卡点反复重试消耗配额。
 
 **「智能」的最低标准**：主动用 MCP（如 验证连通、`getObjectSource` 拉表定义、或 `runQuery`→`DD03L`）验证假设；发现 FS 笔误（如 BKFP→BKPF）在 `functional-spec-ai.md` 中**显式纠正**并记入 tech-design；不把「补文档」当成可选项，把「**跑通 Eclipse ADT 等效的联通、写码与激活**」当成交付的必要条件。若任务为**整包对象**拉取：必须先 **TADIR 分类统计 + 按类型套 URI 模板 + 分批 / `rowNumber` / manifest 续跑**（详见 [mcp-contract.md](mcp-contract.md)「整包开发对象」），**禁止**对整包用 `searchObject` 当枚举或逐对象猜路径试错。
 
@@ -613,9 +617,10 @@ D. 口头描述需求（无需文档）
 
 > **语法参考**：本阶段除「字段契约」+ `metadata/tables/*.json` 外，**必须以 [abap-syntax-quickref.md](abap-syntax-quickref.md) 为语法参考**——打开源码的同时打开本速查，禁止凭记忆写 SELECT / 内表 / OO 代码。速查覆盖 ECC → S4HANA → Cloud 全系，每个模式标注最低版本要求，按目标系统版本选择对应写法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
 >
-> **GUI Status 与文本元素**：ADT REST 无法创建 GUI 状态（SE41）和文本元素（SE32）。报表的 GUI 状态：
-> - **CL_SALV_TABLE**（首选）：自带标准工具栏，无需自定义 GUI 状态。
-> - 经典 ALV / CALL SCREEN：使用 `'STANDARD'`（系统预置 GUI 状态）。文本元素 TEXT-xxx 通过 SE32 手动创建或硬编码英文文本。
+> **GUI Status 与文本元素（硬约束）**：ADT REST **无法**创建 GUI 状态（SE41）和文本元素（SE32）。
+> - **CL_SALV_TABLE**（首选）：自带标准工具栏，**禁止**调用 `set_screen_status`。SALV 的工具栏是内置的，不需要也不应该指定外部 GUI Status。
+> - 经典 ALV（REUSE_ALV_GRID_DISPLAY）：不可用，因为没有 GUI Status。
+> - 文本元素 TEXT-xxx：ADT 部署后需在 SE80/SE32 手动维护，或代码中用硬编码字符串代替。
 
 ### 4.0 对象类型分发（按阶段 1.5 确定的目标类型选择模板）
 
