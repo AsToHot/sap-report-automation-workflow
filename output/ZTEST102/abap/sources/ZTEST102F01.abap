@@ -427,6 +427,12 @@ FORM display.
   DATA(lr_cols) = CAST cl_salv_columns( gr_alv->get_columns( ) ).
   lr_cols->set_optimize( 'X' ).
 
+  gr_alv->set_screen_status(
+    pfstatus      = 'STANDARD'
+    report        = 'SAPLSLVC_FULLSCREEN'
+    set_functions = gr_alv->c_functions_all
+  ).
+
   DATA(lr_selections) = gr_alv->get_selections( ).
   lr_selections->set_selection_mode( 0 ).
 

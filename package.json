@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "node-rfc": "^3.3.1"
+  }
+}
