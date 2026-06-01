@@ -15,16 +15,11 @@ ENDCLASS.
 *&---------------------------------------------------------------------*
 *&      Form  GET_DATA
 *&---------------------------------------------------------------------*
-*       从 FAGLFLEXA + BKPF + BSEG 读取数据，填充输出内表
-*&---------------------------------------------------------------------*
 FORM get_data.
 
   DATA: lv_flag_s TYPE c LENGTH 1 VALUE 'S',
         lv_flag_h TYPE c LENGTH 1 VALUE 'H'.
 
-*--------------------------------------------------
-*  主查询：FAGLFLEXA + BKPF + BSEG
-*--------------------------------------------------
   SELECT fl~rbukrs,
          fl~ryear,
          fl~poper,
@@ -72,10 +67,6 @@ FORM get_data.
     RETURN.
   ENDIF.
 
-*--------------------------------------------------
-*  预加载 LOOKUP 表
-*--------------------------------------------------
-
   " 公司代码配置
   SELECT bukrs, ltext, zzgs FROM zsap_bukrs
     WHERE bukrs IN @s_bukrs
@@ -104,7 +95,7 @@ FORM get_data.
     INTO TABLE @lt_skat.
   SORT lt_skat BY saknr.
 
-  " 科目主数据 (SKA1) — 银行信息
+  " 科目主数据 (SKA1)
   SELECT saknr, zyhzh, zfkyh FROM ska1
     INTO TABLE @lt_ska1.
   SORT lt_ska1 BY saknr.
@@ -122,33 +113,26 @@ FORM get_data.
     INTO TABLE @lt_fi180.
   SORT lt_fi180 BY bukrs.
 
-*--------------------------------------------------
-*  预加载行项目相关 LOOKUP（FOR ALL ENTRIES）
-*--------------------------------------------------
   IF lt_raw IS NOT INITIAL.
 
-    " 供应商主数据
     SELECT lifnr, name1, ktokk FROM lfa1
       FOR ALL ENTRIES IN @lt_raw
       WHERE lifnr = @lt_raw-lifnr
       INTO TABLE @lt_lfa1.
     SORT lt_lfa1 BY lifnr.
 
-    " 客户主数据
     SELECT kunnr, name1, ktokd FROM kna1
       FOR ALL ENTRIES IN @lt_raw
       WHERE kunnr = @lt_raw-kunnr
       INTO TABLE @lt_kna1.
     SORT lt_kna1 BY kunnr.
 
-    " 物料主数据
     SELECT matnr, matkl FROM mara
       FOR ALL ENTRIES IN @lt_raw
       WHERE matnr = @lt_raw-matnr
       INTO TABLE @lt_mara.
     SORT lt_mara BY matnr.
 
-    " 物料描述
     SELECT matnr, maktg FROM makt
       FOR ALL ENTRIES IN @lt_raw
       WHERE matnr = @lt_raw-matnr
@@ -156,7 +140,6 @@ FORM get_data.
       INTO TABLE @lt_makt.
     SORT lt_makt BY matnr.
 
-    " 资产主数据
     SELECT anln1, anlkl FROM anla
       FOR ALL ENTRIES IN @lt_raw
       WHERE anln1 = @lt_raw-anln1
@@ -165,7 +148,6 @@ FORM get_data.
 
   ENDIF.
 
-  " 客户分组描述
   IF lt_kna1 IS NOT INITIAL.
     SELECT ktokd, txt30 FROM t077x
       FOR ALL ENTRIES IN @lt_kna1
@@ -174,7 +156,6 @@ FORM get_data.
     SORT lt_t077x BY ktokd.
   ENDIF.
 
-  " 物料组描述
   IF lt_mara IS NOT INITIAL.
     SELECT matkl, wgbez60 FROM t023t
       FOR ALL ENTRIES IN @lt_mara
@@ -183,7 +164,6 @@ FORM get_data.
     SORT lt_t023t BY matkl.
   ENDIF.
 
-  " 资产类别名称
   IF lt_anla IS NOT INITIAL.
     SELECT anlkl, txk50 FROM ankt
       FOR ALL ENTRIES IN @lt_anla
@@ -192,7 +172,6 @@ FORM get_data.
     SORT lt_ankt BY anlkl.
   ENDIF.
 
-  " 银行业务编号 (ZFI032_DOC)
   SELECT bukrs, belnr, gjahr, zcxflag, bankserialnumber, urid FROM zfi032_doc
     FOR ALL ENTRIES IN @lt_raw
     WHERE bukrs = @lt_raw-rbukrs
@@ -201,7 +180,6 @@ FORM get_data.
     INTO TABLE @lt_fi032.
   SORT lt_fi032 BY bukrs belnr gjahr.
 
-  " 银行业务编号 (ZSAP_FI054)
   SELECT bukrs, belnr, gjahr, bankserialnumber FROM zsap_fi054
     FOR ALL ENTRIES IN @lt_raw
     WHERE bukrs = @lt_raw-rbukrs
@@ -210,14 +188,10 @@ FORM get_data.
     INTO TABLE @lt_fi054.
   SORT lt_fi054 BY bukrs belnr gjahr.
 
-*--------------------------------------------------
-*  逐行填充输出内表
-*--------------------------------------------------
   LOOP AT lt_raw ASSIGNING FIELD-SYMBOL(<fs_raw>).
 
     CLEAR gs_out.
 
-    " 基本字段
     gs_out-rbukrs = <fs_raw>-rbukrs.
     gs_out-ryear  = <fs_raw>-ryear.
     gs_out-poper  = <fs_raw>-poper.
@@ -231,14 +205,12 @@ FORM get_data.
     gs_out-aedat  = <fs_raw>-aedat.
     gs_out-usnam  = <fs_raw>-usnam.
 
-    " 用户角色（同一 USNAM）
     gs_out-reviewer = <fs_raw>-usnam.
     gs_out-preparer = <fs_raw>-usnam.
     gs_out-poster   = <fs_raw>-usnam.
     gs_out-approver = <fs_raw>-usnam.
     gs_out-operator = <fs_raw>-usnam.
 
-    " 凭证信息
     gs_out-blart     = <fs_raw>-blart.
     gs_out-xreversal = <fs_raw>-xreversal.
     gs_out-bktxt     = <fs_raw>-bktxt.
@@ -246,7 +218,6 @@ FORM get_data.
     gs_out-kursf     = <fs_raw>-kursf.
     gs_out-xblnr     = <fs_raw>-xblnr.
 
-    " BSEG 字段
     gs_out-kostl = <fs_raw>-kostl.
     gs_out-sgtxt = <fs_raw>-sgtxt.
     gs_out-matnr = <fs_raw>-matnr.
@@ -255,14 +226,12 @@ FORM get_data.
     gs_out-meins = <fs_raw>-meins.
     gs_out-menge = <fs_raw>-menge.
 
-    " 借方/贷方金额
     IF <fs_raw>-drcrk = lv_flag_s.
       gs_out-hsl_s = <fs_raw>-hsl.
     ELSEIF <fs_raw>-drcrk = lv_flag_h.
       gs_out-hsl_h = <fs_raw>-hsl * ( -1 ).
     ENDIF.
 
-    " 是否调整期凭证
     IF <fs_raw>-poper = '13' OR <fs_raw>-poper = '14'
     OR <fs_raw>-poper = '15' OR <fs_raw>-poper = '16'.
       gs_out-adjust_flg = '是'.
@@ -270,21 +239,18 @@ FORM get_data.
       gs_out-adjust_flg = '否'.
     ENDIF.
 
-    " 业务类型
     IF <fs_raw>-blart = 'Z4'.
       gs_out-bustype = '期末调汇'.
     ELSE.
       gs_out-bustype = '手工录入'.
     ENDIF.
 
-    " 机构代码/名称
     READ TABLE lt_zsap_bukrs ASSIGNING FIELD-SYMBOL(<fs_bukrs>)
       WITH KEY bukrs = <fs_raw>-rbukrs BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-rltext = <fs_bukrs>-ltext.
     ENDIF.
 
-    " 分公司代码/名称（通过 CEPC-KHINR 匹配 ZSAP_BUKRS-BUKRS）
     READ TABLE lt_cepc ASSIGNING FIELD-SYMBOL(<fs_cepc>)
       WITH KEY khinr = <fs_raw>-rbukrs BINARY SEARCH.
     IF sy-subrc = 0.
@@ -296,35 +262,30 @@ FORM get_data.
       ENDIF.
     ENDIF.
 
-    " 科目描述
     READ TABLE lt_skat ASSIGNING FIELD-SYMBOL(<fs_skat>)
       WITH KEY saknr = <fs_raw>-racct BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-racct_txt = <fs_skat>-txt50.
     ENDIF.
 
-    " 部门名称
     READ TABLE lt_cskt ASSIGNING FIELD-SYMBOL(<fs_cskt>)
       WITH KEY kostl = <fs_raw>-kostl BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-kostl_txt = <fs_cskt>-ktext.
     ENDIF.
 
-    " 利润中心描述
     READ TABLE lt_cepct ASSIGNING FIELD-SYMBOL(<fs_cepct>)
       WITH KEY prctr = <fs_raw>-prctr BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-prctr_txt = <fs_cepct>-ltext.
     ENDIF.
 
-    " 物料名称
     READ TABLE lt_makt ASSIGNING FIELD-SYMBOL(<fs_makt>)
       WITH KEY matnr = <fs_raw>-matnr BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-maktx = <fs_makt>-maktg.
     ENDIF.
 
-    " 物料组
     READ TABLE lt_mara ASSIGNING FIELD-SYMBOL(<fs_mara>)
       WITH KEY matnr = <fs_raw>-matnr BINARY SEARCH.
     IF sy-subrc = 0.
@@ -336,7 +297,6 @@ FORM get_data.
       ENDIF.
     ENDIF.
 
-    " 供应商：财务供应商(KTOKK=Z010)、员工(KTOKK=Z011)、普通供应商
     READ TABLE lt_lfa1 ASSIGNING FIELD-SYMBOL(<fs_lfa1>)
       WITH KEY lifnr = <fs_raw>-lifnr BINARY SEARCH.
     IF sy-subrc = 0.
@@ -353,7 +313,6 @@ FORM get_data.
       ENDCASE.
     ENDIF.
 
-    " 客户：财务客户(KTOKD=Z006)、普通客户
     READ TABLE lt_kna1 ASSIGNING FIELD-SYMBOL(<fs_kna1>)
       WITH KEY kunnr = <fs_raw>-kunnr BINARY SEARCH.
     IF sy-subrc = 0.
@@ -364,7 +323,6 @@ FORM get_data.
         gs_out-kunnr     = <fs_kna1>-kunnr.
         gs_out-name1_kur = <fs_kna1>-name1.
       ENDIF.
-      " 客户分组名称
       READ TABLE lt_t077x ASSIGNING FIELD-SYMBOL(<fs_t077x>)
         WITH KEY ktokd = <fs_kna1>-ktokd BINARY SEARCH.
       IF sy-subrc = 0.
@@ -372,7 +330,6 @@ FORM get_data.
       ENDIF.
     ENDIF.
 
-    " 资产类别名称
     READ TABLE lt_anla ASSIGNING FIELD-SYMBOL(<fs_anla>)
       WITH KEY anln1 = <fs_raw>-anln1 BINARY SEARCH.
     IF sy-subrc = 0.
@@ -384,14 +341,12 @@ FORM get_data.
       ENDIF.
     ENDIF.
 
-    " 凭证字
     READ TABLE lt_fi180 ASSIGNING FIELD-SYMBOL(<fs_fi180>)
       WITH KEY bukrs = <fs_raw>-rbukrs BINARY SEARCH.
     IF sy-subrc = 0.
       gs_out-zvouty = <fs_fi180>-zvouty.
     ENDIF.
 
-    " 银行账号相关信息（RACCT LIKE 1002% / 1012%）
     READ TABLE lt_ska1 ASSIGNING FIELD-SYMBOL(<fs_ska1>)
       WITH KEY saknr = <fs_raw>-racct BINARY SEARCH.
     IF sy-subrc = 0.
@@ -399,29 +354,23 @@ FORM get_data.
       gs_out-zfkyh = <fs_ska1>-zfkyh.
     ENDIF.
 
-    " 银行账号描述 (RACCT LIKE 1002%)
     IF <fs_raw>-racct+0(4) = '1002'.
       gs_out-hkont_bkn = gs_out-racct_txt.
-    " 其他货币资金账号描述 (RACCT LIKE 1012%)
     ELSEIF <fs_raw>-racct+0(4) = '1012'.
       gs_out-hkont_fdn = gs_out-racct_txt.
     ENDIF.
 
-    " 业务编号 (仅 1002*/1012*)
     IF <fs_raw>-racct+0(4) = '1002' OR <fs_raw>-racct+0(4) = '1012'.
-      " 优先 ZFI032_DOC
       READ TABLE lt_fi032 ASSIGNING FIELD-SYMBOL(<fs_fi032>)
         WITH KEY bukrs = <fs_raw>-rbukrs belnr = <fs_raw>-docnr gjahr = <fs_raw>-ryear BINARY SEARCH.
       IF sy-subrc = 0 AND <fs_fi032>-zcxflag <> 'X'.
         gs_out-busnum = <fs_fi032>-bankserialnumber.
       ELSE.
-        " 次选 ZSAP_FI054
         READ TABLE lt_fi054 ASSIGNING FIELD-SYMBOL(<fs_fi054>)
           WITH KEY bukrs = <fs_raw>-rbukrs belnr = <fs_raw>-docnr gjahr = <fs_raw>-ryear BINARY SEARCH.
         IF sy-subrc = 0.
           gs_out-busnum = <fs_fi054>-bankserialnumber.
         ELSE.
-          " 最后检查 SKAT-TXT50 是否含"汇丰"
           IF gs_out-racct_txt CS gc_hsbc.
             READ TABLE lt_fi032 ASSIGNING <fs_fi032>
               WITH KEY bukrs = <fs_raw>-rbukrs belnr = <fs_raw>-docnr gjahr = <fs_raw>-ryear BINARY SEARCH.
@@ -433,7 +382,6 @@ FORM get_data.
       ENDIF.
     ENDIF.
 
-    " 固定值 / 保留字段
     gs_out-attchnum = 0.
     gs_out-vernum   = ''.
     gs_out-orgname  = ''.
@@ -453,15 +401,12 @@ FORM get_data.
     APPEND gs_out TO gt_out.
   ENDLOOP.
 
-  " 排序
   SORT gt_out BY rbukrs ryear poper docnr docln.
 
 ENDFORM.
 
 *&---------------------------------------------------------------------*
 *&      Form  DISPLAY
-*&---------------------------------------------------------------------*
-*       ALV 显示，列标题为中文
 *&---------------------------------------------------------------------*
 FORM display.
 
@@ -482,16 +427,9 @@ FORM display.
   DATA(lr_cols) = CAST cl_salv_columns( gr_alv->get_columns( ) ).
   lr_cols->set_optimize( 'X' ).
 
-  gr_alv->set_screen_status(
-    pfstatus      = 'STANDARD'
-    report        = sy-repid
-    set_functions = gr_alv->c_functions_all
-  ).
-
   DATA(lr_selections) = gr_alv->get_selections( ).
   lr_selections->set_selection_mode( 0 ).
 
-  " 62 列中文标题
   PERFORM set_column USING '' lr_cols 'RBUKRS'      '机构代码' ''.
   PERFORM set_column USING '' lr_cols 'RLTEXT'      '机构名称' ''.
   PERFORM set_column USING '' lr_cols 'BUKRS'       '分公司代码' ''.
