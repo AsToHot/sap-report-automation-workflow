@@ -429,7 +429,7 @@ FORM display.
 
   gr_alv->set_screen_status(
     pfstatus      = 'STANDARD'
-    report        = 'SAPLSLVC_FULLSCREEN'
+    report        = 'SAPLKKBL'
     set_functions = gr_alv->c_functions_all
   ).
 
