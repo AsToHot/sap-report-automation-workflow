@@ -1,5 +1,18 @@
 # SAP 报表工作流：参考与备选实现
 
+## ABAP 语法参考源（推荐）
+
+- **首选**：[SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets) — SAP 官方示例库。37 个主题速查表 + `src/` 目录下可执行实验代码。涵盖内表、Open SQL、类型系统、OO 面向对象、设计模式、选择屏幕、WHERE 条件、性能优化、异常处理等全部 ABAP 开发所需主题。
+- **本 Skill 内置速查**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 精选最高频模式，阶段 4 代码生成的语法约束（含 REPORT、CLASS、INTF、FUGR/FM、异常类）。
+- 各阶段的 cheat sheet 对应关系：
+  - 阶段 4（写 ABAP — REPORT）：01_Internal_Tables, 03_ABAP_SQL, 16_Data_Types_and_Objects, 22_Released_ABAP_Classes
+  - 阶段 4（写 ABAP — CLASS）：04_ABAP_Object_Orientation, 34_OO_Design_Patterns, 27_Exceptions
+  - 阶段 4（写 ABAP — INTF）：04_ABAP_Object_Orientation（Interfaces 节）
+  - 阶段 4（写 ABAP — FUGR/FM）：04_ABAP_Object_Orientation（方法参数与异常节）
+  - 阶段 3（技术设计关联/WHERE）：31_WHERE_Conditions, 03_ABAP_SQL
+  - 选择屏幕设计（REPORT 类型）：20_Selection_Screens_Lists
+  - 性能审查（所有类型）：32_Performance_Notes
+
 ## 与 Eclipse ADT 对齐（同一后端契约）
 
 - **Eclipse ADT** = 运行在 Eclipse 上的 **ABAP Development Tools**；日常简称「ADT」即指该产品，**无第二套 ADT 标准**。
@@ -71,18 +84,19 @@ ENTRY="$DST/dist/index.js"
 echo "ENTRY=$ENTRY"
 ```
 
-### 合并写入 `.claude/settings.json` 的算法（代理侧）
+### 合并写入 `.mcp.json` 的算法（代理侧）
 
-1. **定位目标文件**（按用户偏好；默认用户级，密码安全优先）：
-   - 默认：Windows `%USERPROFILE%\.claude\settings.json`；macOS/Linux `~/.claude/settings.json`
-   - 仅当用户明确希望项目级时：`{workspaceFolder}/.claude/settings.json`（并同时把该路径追加进 `.gitignore`）
+1. **定位目标文件**：项目根目录 `{workspaceFolder}/.mcp.json`（Claude Code MCP 配置唯一正确位置）。
 2. **读 → 合并 → 写**，不要覆盖已有 `mcpServers` 下的其他条目：
-   - 若无文件：创建骨架，只有 `mcpServers.ai-abap`
-   - 若有文件：解析 JSON，定位或创建 `mcpServers.ai-abap`，仅更新 `command`、`args[0]=ENTRY`、`env.*`、`disabled=false`
-3. **env 写入策略**：
-   - 已从用户获取的字段：直接填真实值
-   - 尚未获取的字段：**留空字符串** `""`，**严禁**写 `password`、`your-user`、`example.com` 之类占位符冒充已配置
-4. 写入后立即在会话里告知用户「已更新 settings.json，请重启 Claude Code」，然后代理自己尝试再次 `healthcheck`（最多 3 次）。
+   - 若无文件：创建骨架，只有 `mcpServers.abap-adt`
+   - 若有文件：解析 JSON，定位或创建 `mcpServers.abap-adt`，仅更新 `command`、`args[0]=ENTRY`、`env.*`、`disabled=false`
+3. **env 写入策略**（`.mcp.json` 只含代理地址和 DLL 路径，**不含 SAP 凭据**）：
+   - `SAP_URL`: `http://localhost:9876`（代理地址，不是 SAP 真实地址）
+   - `SAPNWRFC_HOME`: NW-RFC-SDK 路径
+   - `PATH`: `%SAPNWRFC_HOME%\lib`
+   - `NODE_TLS_REJECT_UNAUTHORIZED`: `0`
+   - 真实 SAP 凭据（URL/USER/PASSWORD/CLIENT 等）统一保存在 `.env`，由 `rfc-proxy-server.js` 读取
+4. 写入后立即在会话里告知用户「已更新 .mcp.json，请重启 Claude Code」，然后代理自己尝试再次 `healthcheck`（最多 3 次）。
 
 ### `healthcheck` 失败时的结构化诊断（输出给用户的最小集合）
 
@@ -91,22 +105,20 @@ echo "ENTRY=$ENTRY"
 - `envFilled`：哪些 `SAP_*` 仍为空
 - `directNodeStderr`：手动 `node <entry>` 启动 1–2 秒后的 stderr 摘要（帮助用户辨别是 MCP server 自己启动失败还是 Claude Code 未重启）
 
-### Claude Code `settings.json` 示例（`mcpServers.ai-abap`）
+### Claude Code `.mcp.json` 示例（RFC 代理模式）
 
-将 `command`、`args` 指向本机构建产物；`env` 由用户提供（勿把真实密码提交到 Git）。
+将 `command`、`args` 指向本机构建产物；`env` 只含代理地址和 DLL 路径（**不含 SAP 凭据**）。
 
 ```json
 {
   "mcpServers": {
-    "ai-abap": {
-      "command": "node",
-      "args": ["C:/path/to/mcp-abap-abap-adt-api/dist/index.js"],
+    "abap-adt": {
+      "command": "E:/Node.Js/node.exe",
+      "args": ["E:/ABAP工作流/mcp-abap-abap-adt-api/dist/index.js"],
       "env": {
-        "SAP_URL": "https://host:port",
-        "SAP_USER": "",
-        "SAP_PASSWORD": "",
-        "SAP_CLIENT": "000",
-        "SAP_LANGUAGE": "ZH",
+        "SAP_URL": "http://localhost:9876",
+        "SAPNWRFC_HOME": "E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk",
+        "PATH": "E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib",
         "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       },
       "disabled": false
@@ -115,9 +127,9 @@ echo "ENTRY=$ENTRY"
 }
 ```
 
-Claude Code 中 MCP 服务器标识符常为 `**user-ai-abap**`（内部名 `**ai-abap**`），与 `mcpServers` 的键名一致即可。
+> **关键**：`SAP_URL` 必须填 `http://localhost:9876`（代理地址），不是 SAP 真实地址。真实 SAP 地址和凭据由 `rfc-proxy-server.js` 从 `.env` 读取。
 
-**安全**：含密码的 `settings.json` 应加入 `.gitignore`，或使用仅本机用户级配置 `%USERPROFILE%\.claude\settings.json`。
+**安全**：`.mcp.json` 不含密码，但建议加入 `.gitignore`；SAP 凭据统一保存在 `.env`。
 
 ### Cursor
 
@@ -198,5 +210,10 @@ def fetch_ddif(conn_params, tabname):
 
 ## 错误处理与日志
 
-- ADT 激活接口通常返回 XML/JSON 混合的 **消息列表**；提取 `severity`、`message`、`location`。
-- 将每次失败 **追加** 到 `docs/activation-log.md`，便于审计与复盘。
+- ADT 激活接口通常返回 XML，但**格式因 SAP 版本/补丁级别而异**，解析器必须兼容以下三种：
+  1. `<chkl:messages>` 容器中的 `<msg type="E">` 或 `<msg type="A">`（错误/终止消息）
+  2. `<atom:entry>` 中 `<category term="error">`（Atom feed 格式的错误条目）
+  3. 简单 `<entry>` 标签（遗留格式）
+  - **禁止**仅匹配 `<entry>` 就判定成功；必须穷尽上述三种格式的错误检测。
+- ADT 语法检查端点（`POST .../source/main?method=check`）在部分 SAP 版本返回 **405 Not Supported**，此时应标记 `unavailable: true`，由激活阶段兜底验证语法。
+- 将每次失败 **追加** 到 `output/<program>/docs/smoke-test.md`，便于审计与复盘。

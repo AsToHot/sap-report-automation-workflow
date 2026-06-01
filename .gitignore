@@ -1,3 +1,6 @@
 _dist/
 *.zip
+*.log
 .claude/settings.json
+.env
+.locks/

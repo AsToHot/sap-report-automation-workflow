@@ -2,9 +2,7 @@
   "mcpServers": {
     "abap-adt": {
       "command": "E:/Node.Js/node.exe",
-      "args": [
-        "E:/ABAP工作流/mcp-abap-abap-adt-api/dist/index.js"
-      ],
+      "args": ["E:/ABAP工作流/mcp-abap-abap-adt-api/dist/index.js"],
       "env": {
         "SAP_URL": "http://localhost:9876",
         "SAPNWRFC_HOME": "E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk",
