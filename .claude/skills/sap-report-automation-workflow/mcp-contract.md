@@ -1,4 +1,4 @@
-# user-ai-abap（ai-abap）MCP：使用说明与参数契约
+# abap-adt MCP：使用说明与参数契约
 
 本 MCP 封装 **ADT REST**（`/sap/bc/adt/`），与 **Eclipse ADT（ABAP Development Tools）** 访问 AS ABAP 时使用的后端契约**同源**；工具名与参数以 Claude Code 下发的 JSON schema 为准。
 
@@ -6,7 +6,7 @@
 
 **没有**与 Claude Code 分开发行的独立「Eclipse ADT / ADT MCP 合并用户手册 PDF」。**官方契约**就是 Claude Code 为已启用 MCP 下发的 **JSON Tool Descriptor**：
 
-- 在本机通常位于：`<Claude Code 缓存>/mcps/user-ai-abap/tools/<工具名>.json`
+- 在本机通常位于：`<Claude Code 缓存>/mcps/abap-adt/tools/<工具名>.json`
 - 对话里系统也会要求：**调用任意 MCP 工具前必须先读对应 schema**（`required` 字段名即合法参数名，大小写一致）。
 
 代理**禁止**凭记忆猜测参数名（例如把 `max` 写成 `maxResults`）；**必须**打开上述 JSON 核对后再调用。

@@ -1,0 +1,66 @@
+FUNCTION zreport_exec_verify.
+*"----------------------------------------------------------------------
+*"*"本地接口：
+*"  IMPORTING
+*"     VALUE(IV_REPORT) TYPE  PROGRAMM OPTIONAL
+*"  EXPORTING
+*"     VALUE(EV_SUCCESS) TYPE  STRING
+*"     VALUE(EV_MESSAGE) TYPE  STRING
+*"     VALUE(EV_ROW_COUNT) TYPE  INT4
+*"     VALUE(EV_DATA_JSON) TYPE  STRING
+*"  TABLES
+*"      IT_RSPARAMS STRUCTURE  RSPARAMS OPTIONAL
+*"----------------------------------------------------------------------
+  DATA: lr_data TYPE REF TO data.
+  DATA: lo_writer TYPE REF TO cl_sxml_string_writer.
+  DATA: lv_json_x TYPE xstring.
+  FIELD-SYMBOLS:<lt_data> TYPE STANDARD TABLE.
+
+  CLEAR: ev_success, ev_row_count, ev_message, ev_data_json.
+
+  TRY.
+      " 启用 ALV 数据捕获（拦截 SALV 输出，不显示屏幕）
+      cl_salv_bs_runtime_info=>set(
+        display  = abap_false
+        metadata = abap_false
+        data     = abap_true ).
+
+      " 执行目标报表（使用默认选择屏幕参数）
+      SUBMIT (iv_report)
+       WITH SELECTION-TABLE it_rsparams
+       AND RETURN.
+
+      " 获取 ALV 数据引用
+      cl_salv_bs_runtime_info=>get_data_ref(
+        IMPORTING r_data = lr_data ).
+
+      " 解引用并统计行数
+      ASSIGN lr_data->* TO <lt_data>.
+      IF sy-subrc = 0.
+        ev_row_count = lines( <lt_data> ).
+
+        " 序列化为 JSON（使用 SXML writer）
+        lo_writer = cl_sxml_string_writer=>create( type = if_sxml=>co_xt_json ).
+        CALL TRANSFORMATION id
+          SOURCE data = <lt_data>
+          RESULT XML lo_writer.
+        lv_json_x = lo_writer->get_output( ).
+        ev_data_json = cl_abap_codepage=>convert_from( lv_json_x ).
+      ENDIF.
+
+      ev_success = 'X'.
+      ev_message = |报表 { iv_report } 执行成功，共 { ev_row_count } 行|.
+
+    CATCH cx_salv_bs_sc_runtime_info INTO DATA(lx_noalv).
+      " 报表未输出 ALV（可能用了传统 WRITE 或出错）
+      ev_success = ''.
+      ev_message = lx_noalv->get_text( ).
+    CATCH cx_root INTO DATA(lx_root).
+      ev_success = ''.
+      ev_message = lx_root->get_text( ).
+  ENDTRY.
+
+  " 清理，避免影响后续 ALV 调用
+  cl_salv_bs_runtime_info=>clear_all( ).
+
+ENDFUNCTION.

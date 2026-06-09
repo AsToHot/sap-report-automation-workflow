@@ -16,10 +16,10 @@
 ## 与 Eclipse ADT 对齐（同一后端契约）
 
 - **Eclipse ADT** = 运行在 Eclipse 上的 **ABAP Development Tools**；日常简称「ADT」即指该产品，**无第二套 ADT 标准**。
-- 本工作流中的 **`ai-abap` MCP** 通过 **ADT REST**（`/sap/bc/adt/`）访问 AS ABAP，与 Eclipse ADT 调用的**同一类 HTTP 接口**（abap-adt-api 生态）。因此：**能在 Eclipse ADT 里连上并编辑的开发对象，在 MCP 连通且权限一致的前提下，应能同样读写与激活**；`SAP_URL` 须为可访问该系统的 **HTTPS 基地址**（经 Web Dispatcher / 反向代理 / 网络路由后的终端 URL，与 Eclipse 中「系统 URL」应对齐）。
+- 本工作流中的 **`abap-adt` MCP** 通过 **ADT REST**（`/sap/bc/adt/`）访问 AS ABAP，与 Eclipse ADT 调用的**同一类 HTTP 接口**（abap-adt-api 生态）。因此：**能在 Eclipse ADT 里连上并编辑的开发对象，在 MCP 连通且权限一致的前提下，应能同样读写与激活**；`SAP_URL` 须为可访问该系统的 **HTTPS 基地址**（经 Web Dispatcher / 反向代理 / 网络路由后的终端 URL，与 Eclipse 中「系统 URL」应对齐）。
 - **差异**：MCP 在 Claude Code 中自动化执行；不替代 Eclipse GUI。锁、传输、并发编辑等行为与 Eclipse ADT 一致，需注意冲突。
 
-## Eclipse ADT 同源 MCP（ai-abap）源码仓库（部署优先）
+## Eclipse ADT 同源 MCP（abap-adt）源码仓库（部署优先）
 
 
 | 优先级    | 仓库                                                                                                  | 说明                                                                                |
@@ -146,7 +146,7 @@ echo "ENTRY=$ENTRY"
 
 | 方案                                          | 用途                                                     |
 | ------------------------------------------- | ------------------------------------------------------ |
-| **ADT REST** `/sap/bc/adt/`                 | Eclipse ADT 同款 API；稳定、可脚本化；MCP `user-ai-abap` 已封装常用操作。 |
+| **ADT REST** `/sap/bc/adt/`                 | Eclipse ADT 同款 API；稳定、可脚本化；MCP `abap-adt` 已封装常用操作。 |
 | **abapify/adt-cli**（TypeScript）             | 契约化 HTTP 客户端与 CLI，适合流水线里拉代码、检查、部署。                     |
 | **abapGit + CI**                            | `ZABAPGIT_CI` 或 REST 跑语法/对象检查；适合合并后与系统侧校验。             |
 | **Jenkins / GitHub Actions + On-Prem ABAP** | 社区常见模式：凭证与网络由运维管控，代理只负责触发与收集日志。                        |
@@ -182,17 +182,17 @@ def fetch_ddif(conn_params, tabname):
 
 **问题**：`ddicElement` / `ddicRepositoryAccess` 在多数场景下**不是**「整表字段目录」接口，返回体可能很薄，容易被误判为「参数不对、反复试错」。
 
-**首选（推荐，一次到位、与 ADT 浏览器同源）**
+**首选（稳定，与 SKILL.md 阶段 2 策略一致）**
 
-- MCP 工具：`**getObjectSource`**
-- 参数：`**objectSourceUrl`** = `**/sap/bc/adt/ddic/tables/<表名>/source/main**`
-  - `<表名>` 与 ADT URI 一致，**通常小写**（如 `bkpf`、`bseg`）；大写多数系统也可接受，但为减少歧义统一用小写。
-- 返回：表的 **源码形态定义**（S/4 常见为 **CDS `define table ...`**），**包含全部字段、主键、外键线索**，适合直接写入 `metadata/tables/<TABNAME>.json` 的 `source` 字段或再解析出字段列表。
-
-**备选（需 SQL 权限，但同样快）**
-
-- MCP 工具：`**runQuery`**
+- MCP 工具：`**runQuery`**（`abap-adt-data` 或 `abap-adt`）
 - 示例：`SELECT TABNAME, FIELDNAME, POSITION, KEYFLAG, DATATYPE, LENG, DECIMALS, ROLLNAME FROM DD03L WHERE TABNAME = 'BKPF' AND AS4LOCAL = 'A' ORDER BY POSITION`
+- 说明：`getObjectSource` 对 DDIC 透明表返回 404（非源码对象），`runQuery→DD03L` 是唯一可靠的元数据路径。
+
+**备选**
+
+- MCP 工具：`**getObjectSource`**（仅对 CDS view 等源码对象有效）
+- 参数：`**objectSourceUrl`** = `**/sap/bc/adt/ddic/tables/<表名>/source/main**`
+- 注意：对传统透明表返回 404，不可作为主路径。
 
 **何时用 RFC `DDIF_FIELDINFO_GET`**
 
@@ -203,7 +203,7 @@ def fetch_ddif(conn_params, tabname):
 
 | 工具                   | 典型用途                | 不适合                    |
 | -------------------- | ------------------- | ---------------------- |
-| `getObjectSource`    | 拉表/结构/类 **源码**      | —                      |
+| `getObjectSource`    | 拉类/接口/程序**源码**      | 对透明表 DDIC 返回 404，不可当字段字典主路径            |
 | `ddicElement`        | DDIC 元素 **导航/属性摘要** | 当作完整字段字典会失望            |
 | `runQuery` + `DD03L` | 字段级 **行列清单**        | 无 Open SQL / DDIC 读权限时 |
 

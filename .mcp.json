@@ -10,6 +10,17 @@
         "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       },
       "disabled": false
+    },
+    "abap-adt-data": {
+      "command": "E:/Node.Js/node.exe",
+      "args": ["E:/ABAP工作流/mcp-abap-abap-adt-api/dist/index.js"],
+      "env": {
+        "SAP_URL": "http://localhost:9877",
+        "SAPNWRFC_HOME": "E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk",
+        "PATH": "E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "disabled": false
     }
   }
 }

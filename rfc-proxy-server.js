@@ -23,9 +23,12 @@ if (!(process.env.PATH || '').includes(sdkLib)) {
 const noderfc = require('node-rfc');
 
 // ── Load .env ───────────────────────────────────────────────────────────────
-const envPath = path.resolve(__dirname, '.env');
+const envFileArg = process.argv.find(a => a.startsWith('--env='));
+const envFileName = envFileArg ? envFileArg.split('=')[1] : '.env';
+const envPath = path.resolve(__dirname, envFileName);
 const env = {};
 if (fs.existsSync(envPath)) {
+  console.log(`[CFG] Loading env from: ${envFileName}`);
   const raw = fs.readFileSync(envPath, 'utf-8');
   for (const line of raw.split(/\r?\n/)) {
     const m = line.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
