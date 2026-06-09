@@ -6,3 +6,4 @@ _dist/
 .env
 .env.300
 .locks/
+spec/*.docx
