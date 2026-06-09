@@ -83,10 +83,13 @@ description: |
 - `output/<program>/docs/deployment-config.md`
 - `output/<program>/docs/stage-gate.md`
 
-并在 `output/<program>/docs/stage-gate.md` 中确认以下 5 项为已完成：
+并在 `output/<program>/docs/stage-gate.md` 中确认以下全部项为已完成：
 
+- `S0=permission-check`
 - `S1=functional-spec-ready`
+- `S1.5=object-name-confirmed`
 - `S2=metadata-ready`
+- `S2.5=performance-estimate-ready`
 - `S3=tech-design-ready`
 - `S3.5=fs-coverage-ready`
 - `S3.6=deployment-config-ready`
@@ -115,7 +118,7 @@ description: |
 
 ## 阶段 0：MCP 自动安装与连通（**代理默认无人值守执行；不得把安装推给用户**）
 
-本 Skill 的最硬性门禁：**在执行任何依赖与 Eclipse ADT 同源的 ADT REST 的操作（FS 校正、拉表结构、写 ABAP、激活）之前，`abap-adt`（内部名 `abap-adt`）MCP 必须处于「可连通 SAP」的状态**。若未就绪，代理**必须主动完成安装与注册**，而不是回复「请您先安装 MCP」把球踢回用户。唯一允许打断自动流程向用户索要的，是**本机不可自动获取的 SAP 连接凭据**。
+本 Skill 的最硬性门禁：**在执行任何依赖与 Eclipse ADT 同源的 ADT REST 的操作（FS 校正、拉表结构、写 ABAP、激活）之前，`abap-adt`（内部名 `abap-adt`）MCP 必须处于「可连通 SAP」的状态**。若未就绪，代理**必须主动完成安装与注册**，而不是回复「请您先安装 MCP」把球踢回用户。唯一允许打断自动流程向用户索要的：**SAP 连接凭据、Node.js 安装、NW RFC SDK 安装及 Windows 环境变量配置**。代理能自动完成的（`npm install`、`npm run build`、写 `.mcp.json`、启动代理）必须自己做。
 
 ### 0.0 代理行为约束（红线）
 
@@ -222,7 +225,7 @@ echo "ENTRY=$(pwd)/dist/index.js"
 | `SAP_USERNAME` | 开发账号 | `<username>` |
 | `SAP_PASSWORD` | 开发密码 | `********` |
 | `SAP_LANGUAGE` | 登录语言，默认 `ZH` | `ZH` |
-| `SAP_SID` | 系统标识（用于传输请求命名、诊断） | `EE0` |
+| `SAP_SID` | 系统标识（用于传输请求命名、诊断） | `<sid>` |
 | `SAP_SYSNR` | 实例编号（从端口 80XX 推导或用户给出） | `00` |
 | `SAP_ROUTER` | SAP Router 字符串（RFC 内网场景必填） | `<router-string>` |
 | `SAP_CONNECTION_TYPE` | `rfc`（推荐，支持 Router）或 `http` | `rfc` |
@@ -412,7 +415,7 @@ cd "E:/ABAP工作流" && SAPNWRFC_HOME="E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk" PA
 ## 目标与原则
 
 - **连接方式**：优先使用已配置的 **ADT REST**（通过 MCP `abap-adt` 暴露）；与 **Eclipse ADT** 使用同一套 `/sap/bc/adt/` 契约，适合无头自动化与 CI。
-- **表字段元数据**：**首选** MCP `getObjectSource`，`objectSourceUrl` = `/sap/bc/adt/ddic/tables/<小写表名>/source/main`（一次拉全表定义；勿把 `ddicElement` 当字段字典空转）。**备选** `runQuery`→`DD03L`。**RFC** `DDIF_FIELDINFO_GET` 仅兜底（见 [reference.md](reference.md)）。
+- **表字段元数据**：**唯一可靠路径** `runQuery`→`DD03L`（`AS4LOCAL = 'A'`）。`getObjectSource` 对 DDIC 透明表返回 404（非源码对象），**不可**作为主路径。**RFC** `DDIF_FIELDINFO_GET` 仅兜底（见 [reference.md](reference.md)）。
 - **成熟方案参考**：团队级 CI/CD 可叠加 **abapGit**、流水线（Jenkins / GitHub Actions）与 **abapify/adt-cli**；本 Skill 聚焦「对话式代理 + **Eclipse ADT 同源 ADT REST**」闭环，可与上述方案并存。
 
 ## 前置条件
@@ -718,7 +721,7 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
 5. **异常处理**：若有外部调用（RFC / BAPI / DB），声明 `RAISING` 异常或 try/catch `CX_ROOT`。
 6. **元数据驱动**：类中若涉及 Open SQL，字段名仍须来自 `metadata/tables/*.json` + 字段契约。
 
-**部署**：使用 `scripts/deploy_rfc.js`（或 MCP 直接调用 `createObject` + `setObjectSource`），按 CLAS 类型处理。类激活后可在 SE24 中验证。
+**部署**：统一使用 `scripts/deploy_rfc.js` 部署。类激活后可在 SE24 中验证。
 
 ### 4.7：INTF 接口生成
 
@@ -755,7 +758,7 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
    - `ENDFUNCTION.`
 4. **RFC-enabled**：若为远程调用，FM 声明 `REMOTE` 标记。
 
-**部署**：FUGR 创建方式与 REPORT/CLAS 不同，agent 需通过 `scripts/deploy_rfc.js` 或 MCP 对应工具逐个创建函数组、再创建 FM。
+**部署**：统一使用 `scripts/deploy_rfc.js` 部署，逐个创建函数组、再创建 FM。
 
 ### 4.9：通用反模式自检（阶段 4 末尾强制，所有类型）
 
@@ -839,9 +842,10 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
 ### 3.6.1 开发包（Package）
 
 - **询问用户**：目标开发包名称（如 `ZGD01`、`ZFI01`）。
-- **若用户无法提供或留空**：默认使用 **`$TMP`（本地包）**，此时**无需传输请求**。
+- **若用户无法提供或留空**：默认使用 **`$TMP`（本地包）**，此时**无需传输请求**。`$TMP` 适用于开发/测试阶段；正式上线前需迁移到真实包（如 `ZFI01`）并关联传输请求。
 - **若用户提供了开发包**：代理须通过 `runQuery` 或 `searchObject` 验证该包在系统中是否存在、用户是否有写入权限。
   - 验证失败 → 回退到 `$TMP` 或请用户换包，记录到 `output/<program>/docs/deployment-config.md`。
+- **禁止**在 `.env` 中设置全局 `SAP_DEPLOY_PACKAGE`——包配置必须按程序隔离，从 `deployment-config.md` 读取。
 
 ### 3.6.2 传输请求（Transport Request）——仅非本地包时需要
 
@@ -930,9 +934,9 @@ S5.5=smoke-test-passed: yes/no
 若当前目录是 Git 仓库，代理应在每阶段门禁通过后自动执行 `git add + git commit`，形成可追溯的变更历史：
 
 - **提交信息格式**：`[SAP-WF] 阶段X: 简述产物`
-  - 例：`[SAP-WF] S1: 功能规格规范化 EE041-ZSAP_FI250`
+  - 例：`[SAP-WF] S1: 功能规格规范化`
   - 例：`[SAP-WF] S2: 落盘 4 张透明表元数据 + 性能预估`
-  - 例：`[SAP-WF] S5.5: 激活通过 + 冒烟测试通过`
+  - 例：`[SAP-WF] S5: 激活通过 + 冒烟测试通过`
 - **提交范围**：每阶段新增/修改的产物文件（不要 `git add -A` 提交无关文件）。
 - **失败处理**：若 `git` 不可用或仓库未初始化 → 跳过并提示用户；不阻塞工作流。
 - **价值**：当阶段 4/5 反复修错时，可随时 `git diff` 查看变更；当需要回滚到某阶段时，可直接 `git checkout` 到对应提交。
@@ -1314,10 +1318,7 @@ const body = resp.MESSAGE_BODY
 
 ```
 根目录辅助脚本
-├── rfc-proxy-server.js              # RFC ADT 代理服务器（监听 localhost:9876）
-├── mcp-launcher.js                  # MCP 启动包装器（自动设置 SAPNWRFC_HOME + PATH）
-├── run-claude.js                    # 带预设 prompt 启动 Claude Code（一次性/遗留）
-└── launch-claude.js                 # 启动 Claude Code（无 prompt，stdio inherit）
+└── rfc-proxy-server.js              # RFC ADT 代理服务器（监听 localhost:9876）
 
 scripts/
 ├── deploy_rfc.js                    # 主部署脚本（编排模块）
@@ -1325,6 +1326,7 @@ scripts/
 ├── extract-docx.js                  # 从 .docx 提取文本
 ├── test_rfc.js                      # RFC 环境诊断（独立验证 node-rfc + 连通性）
 ├── test_mcp_login.js                # MCP 端到端连通测试（通过 RFC 代理验证 objectTypes）
+├── verify_report.js                 # 通用报表真实数据校验（动态字段，多参数并行）
 ├── fetch_metadata.js                # 批量拉取透明表 DDIC
 ├── perf_estimate.js                 # 主表 COUNT 预估
 ├── release_locks.js                 # 释放当前用户在 SAP 中的所有锁（DEQUEUE_ALL）
@@ -1344,7 +1346,9 @@ scripts/
     ├── upload-include-source.js     # PUT /programs/includes/{name}/source/main
     ├── syntax-check.js              # POST .../source/main?method=check
     ├── activate-objects.js          # POST /sap/bc/adt/activation?method=activate
-    └── with-lock.js                 # 自动锁管理组合（lock → fn → unlock）
+    ├── with-lock.js                 # 自动锁管理组合（lock → fn → unlock）
+    ├── lock-store.js                # Lock Handle 持久化（.locks/ 目录）
+    └── query-locks.js               # 查询当前 SAP 锁（ADT REST）
 ```
 
 ### 模块使用指南
@@ -1369,14 +1373,13 @@ scripts/
 
 | 脚本 | 场景 | 说明 |
 |------|------|------|
-| `rfc-proxy-server.js` | 阶段 0 启动 RFC 代理 | 监听 `127.0.0.1:9876`，将 HTTP ADT REST 请求转译为 `SADT_REST_RFC_ENDPOINT` RFC 调用。启动后常驻后台，直到手动 `SIGINT`。 |
-| `mcp-launcher.js` | 替代 `.mcp.json` 直接启动 MCP | 设置 `SAPNWRFC_HOME` 和 `PATH` 后加载 `mcp-abap-abap-adt-api/dist/index.js`。仅在 `.mcp.json` 使用 `args: ["mcp-launcher.js"]` 时生效。 |
-| `scripts/test_mcp_login.js` | MCP 连通性端到端测试 | 自动检查代理是否运行 → 启动代理（如需）→ 对 MCP 发送 `objectTypes` JSON-RPC 请求 → 输出 `PASSED`/`FAILED`。用于验证整条链路（MCP → 代理 → SAP）。 |
-| `scripts/release_locks.js` | 应急释放锁 | 通过 RFC 调用 `DEQUEUE_ALL` 释放当前用户持有的全部 SAP 锁。部署卡住或锁泄漏时使用。 |
-| `scripts/unlock_prog.js` | 应急解锁指定程序 | 通过 RFC 直接发送 UNLOCK ADT 请求，需手动填入 `lockHandle`。用于代理锁异常时的手动释放。 |
+| `rfc-proxy-server.js` | 阶段 0 启动 RFC 代理 | 监听 `127.0.0.1:9876`，将 HTTP ADT REST 请求转译为 `SADT_REST_RFC_ENDPOINT` RFC 调用。启动后常驻后台。 |
+| `scripts/test_mcp_login.js` | MCP 连通性端到端测试 | 自动检查代理是否运行 → 启动代理（如需）→ 对 MCP 发送 `objectTypes` JSON-RPC 请求 → 输出 `PASSED`/`FAILED`。 |
+| `scripts/verify_report.js` | 阶段 5.5 冒烟测试 | 在 300 系统执行报表，捕获 ALV 输出为 JSON，动态字段展示，支持多组参数并行测试。 |
+| `scripts/release_locks.js` | 应急释放锁 | 通过 RFC 调用 `DEQUEUE_ALL` 释放当前用户持有的全部 SAP 锁。 |
+| `scripts/unlock_prog.js` | 应急解锁指定程序 | 通过 RFC 直接发送 UNLOCK ADT 请求，需手动填入 `lockHandle`。 |
 | `scripts/unlock_includes.js` / `v2` | 应急解锁 Include | 同上，针对 Include 对象。v2 为改进版本。 |
-| `scripts/deploy_includes_only.js` | 仅部署 Include | 当主程序已在 SAP 中创建好，只需更新 Include（T01/SEL/F01）时使用。不创建主程序、不覆盖主程序源码。 |
-| `run-claude.js` / `launch-claude.js` | 本地启动 Claude Code | 一次性/遗留脚本，用于在 Windows 上通过 `child_process.spawn` 启动 Claude Code CLI。日常由用户直接使用 `claude` 命令替代。 |
+| `scripts/deploy_includes_only.js` | 仅部署 Include | 当主程序已在 SAP 中创建好，只需更新 Include（T01/SEL/F01）时使用。 |
 
 ### 主脚本部署流程（`scripts/deploy_rfc.js`）
 
