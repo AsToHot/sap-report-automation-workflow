@@ -34,10 +34,15 @@ function loadEnv(filePath) {
 }
 const env300 = loadEnv(path.join(__dirname, '..', '.env.300'));
 
+// 从 .env.300 读取连接参数 — 所有字段必须显式配置，不使用硬编码默认值
+if (!env300.SAP_URL) {
+  console.error('[FATAL] .env.300 缺少 SAP_URL — 无法连接 300 系统');
+  process.exit(1);
+}
 const CONN300 = {
-  ashost: (env300.SAP_URL || 'http://10.32.21.11:8000').replace(/^https?:\/\//, '').replace(/:\d+$/, ''),
+  ashost: env300.SAP_URL.replace(/^https?:\/\//, '').replace(/:\d+$/, ''),
   sysnr: env300.SAP_SYSNR || String(parseInt(
-    (env300.SAP_URL || '').match(/:(\d+)$/)?.[1] || '8000'
+    env300.SAP_URL.match(/:(\d+)$/)?.[1] || '8000'
   ) % 100).padStart(2, '0'),
   client: env300.SAP_CLIENT || '300',
   user:   env300.SAP_USERNAME || '',
