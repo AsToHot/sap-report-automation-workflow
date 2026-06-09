@@ -5,10 +5,27 @@
  */
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const fs = require('fs');
 const http = require('node:http');
 
 const proxyPath = path.resolve(__dirname, '..', 'rfc-proxy-server.js');
 const mcpPath = path.resolve(__dirname, '..', 'mcp-abap-abap-adt-api', 'dist', 'index.js');
+
+// 从 .env 读取 SAP 凭据（不硬编码）
+function loadEnv(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.error('[FATAL] .env not found at', filePath);
+    console.error('[FIX] Create .env with SAP_URL, SAP_USER, SAP_PASSWORD, SAP_CLIENT, SAP_LANGUAGE, SAP_ROUTER, SAP_CONNECTION_TYPE');
+    process.exit(1);
+  }
+  const env = {};
+  fs.readFileSync(filePath, 'utf-8').split(/\r?\n/).forEach(line => {
+    const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.+?)\s*$/);
+    if (m) env[m[1]] = m[2];
+  });
+  return env;
+}
+const dotEnv = loadEnv(path.resolve(__dirname, '..', '.env'));
 
 let proxy;
 
@@ -25,7 +42,7 @@ function isProxyRunning() {
 function startProxy() {
   return new Promise((resolve, reject) => {
     proxy = spawn('node', [proxyPath], {
-      env: { ...process.env, SAP_URL: 'http://10.32.21.11:8000', SAP_USER: 'ITL12', SAP_PASSWORD: '12345Qwert!', SAP_CLIENT: '200', SAP_LANGUAGE: 'ZH', SAP_ROUTER: '/H/210.75.21.252', SAP_CONNECTION_TYPE: 'rfc', SAPNWRFC_HOME: path.resolve(__dirname, '..', 'NW-RFC-SDK', 'nwrfcsdk') },
+      env: { ...process.env, SAP_URL: dotEnv.SAP_URL, SAP_USER: dotEnv.SAP_USERNAME, SAP_PASSWORD: dotEnv.SAP_PASSWORD, SAP_CLIENT: dotEnv.SAP_CLIENT, SAP_LANGUAGE: dotEnv.SAP_LANGUAGE, SAP_ROUTER: dotEnv.SAP_ROUTER || '', SAP_CONNECTION_TYPE: 'rfc', SAPNWRFC_HOME: path.resolve(__dirname, '..', 'NW-RFC-SDK', 'nwrfcsdk') },
       stdio: ['ignore', 'pipe', 'pipe']
     });
     let stdout = '';
