@@ -1,0 +1,111 @@
+搜到了，SAP 官方文档说得挺清楚。`RSPARAMS` 结构字段和赋值方式：
+
+---
+
+**RSPARAMS 结构字段**
+
+| 字段 | 长度 | 说明 |
+|------|------|------|
+| `SELNAME` | 8 | 选择屏幕元素名（大写） |
+| `KIND` | 1 | `P`=参数，`S`=选择条件 |
+| `SIGN` | 1 | `I`=包含，`E`=排除 |
+| `OPTION` | 2 | `EQ`/`NE`/`BT`/`NB`/`CP`/`GT`/`GE`/`LT`/`LE` |
+| `LOW` | 45 | 下限值（字符型，内部格式） |
+| `HIGH` | 45 | 上限值（字符型，内部格式） |
+
+> 7.2+ 可用 `RSPARAMSL_255`，LOW/HIGH 长度 255。
+
+---
+
+**赋值示例**
+
+```abap
+DATA: lt_rspar TYPE TABLE OF rsparams,
+      ls_rspar LIKE LINE OF lt_rspar.
+
+" 单值参数（PARAMETERS）
+ls_rspar-selname = 'P_BUKRS'.   " 参数名大写
+ls_rspar-kind    = 'P'.          " P = 参数
+ls_rspar-sign    = 'I'.
+ls_rspar-option  = 'EQ'.
+ls_rspar-low     = '1000'.       " 参数值放 LOW
+APPEND ls_rspar TO lt_rspar.
+CLEAR ls_rspar.
+
+" 范围选择（SELECT-OPTIONS）- 单值
+ls_rspar-selname = 'S_GJAHR'.
+ls_rspar-kind    = 'S'.          " S = 选择条件
+ls_rspar-sign    = 'I'.
+ls_rspar-option  = 'EQ'.
+ls_rspar-low     = '2024'.
+APPEND ls_rspar TO lt_rspar.
+CLEAR ls_rspar.
+
+" 范围选择 - 区间
+ls_rspar-selname = 'S_MONAT'.
+ls_rspar-kind    = 'S'.
+ls_rspar-sign    = 'I'.
+ls_rspar-option  = 'BT'.         " BT = Between
+ls_rspar-low     = '01'.
+ls_rspar-high    = '12'.
+APPEND ls_rspar TO lt_rspar.
+CLEAR ls_rspar.
+
+" 范围选择 - 排除单值
+ls_rspar-selname = 'S_BUKRS'.
+ls_rspar-kind    = 'S'.
+ls_rspar-sign    = 'E'.          " E = 排除
+ls_rspar-option  = 'EQ'.
+ls_rspar-low     = '9999'.
+APPEND ls_rspar TO lt_rspar.
+
+" 调用报表
+SUBMIT zfirp001 WITH SELECTION-TABLE lt_rspar AND RETURN.
+```
+
+---
+
+**从当前程序自动获取选择屏幕值**
+
+```abap
+DATA: lt_paras TYPE TABLE OF rsparams,
+      lt_paral TYPE TABLE OF rsparamsl_255.
+
+CALL FUNCTION 'RS_REFRESH_FROM_SELECTOPTIONS'
+  EXPORTING
+    curr_report         = sy-repid
+  TABLES
+    selection_table     = lt_paras      " RSPARAMS (45字符)
+    selection_table_255 = lt_paral      " RSPARAMSL_255 (255字符)
+  EXCEPTIONS
+    not_found           = 1
+    no_report           = 2
+    OTHERS              = 3.
+
+IF sy-subrc = 0.
+  SUBMIT zfirp001 WITH SELECTION-TABLE lt_paral AND RETURN.
+ENDIF.
+```
+
+---
+
+**7.4+ 内联写法**
+
+```abap
+lt_rspar = VALUE #(
+  ( selname = 'P_BUKRS' kind = 'P' sign = 'I' option = 'EQ' low = '1000' )
+  ( selname = 'S_GJAHR' kind = 'S' sign = 'I' option = 'EQ' low = '2024' )
+  ( selname = 'S_MONAT' kind = 'S' sign = 'I' option = 'BT' low = '01' high = '12' )
+).
+```
+
+---
+
+**关键注意点**
+
+| 注意 | 说明 |
+|------|------|
+| 内部格式 | LOW/HIGH 必须是 ABAP 内部格式，不是屏幕显示格式 |
+| 字符类型 | LOW/HIGH 都是 CHAR，会自动转换为目标字段类型 |
+| 参数忽略 SIGN/OPTION | KIND='P' 时只有 LOW 有效，SIGN/OPTION/HIGH 被忽略 |
+| 多行同 SELNAME | 同一个选择条件可以有多行，组成完整的选择表 |
