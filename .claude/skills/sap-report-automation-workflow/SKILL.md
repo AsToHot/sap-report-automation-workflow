@@ -551,6 +551,13 @@ D. 口头描述需求（无需文档）
 
 用稳定标题与列表，避免冗长叙述；表名一律 **大写**。
 
+### S1 门禁前必核
+
+- [ ] FS 中每个表名都能在 SAP DDIC 中查到（`searchObject` 或 `runQuery→DD02L`），**不存在笔误表名**
+- [ ] 每个选择字段的 DDIC 类型/长度已在 metadata 目录或 FS 中标注
+- [ ] SPRAS 字段明确标注为 LANG 类型（长度 1），不得写 `'ZH'`
+- [ ] 输出列与金额计算公式有明确的表.字段来源，无 "TBD" 或 "推测"
+
 ## 阶段 1.5：对象名确认与 SAP 存在性检查（硬门禁；所有对象类型通用）
 
 > **位置**：`functional-spec-ai.md` 已确认、但 **尚未创建 `output/<object>/` 任何目录和文件** 之前。
@@ -600,6 +607,12 @@ D. 口头描述需求（无需文档）
 2. 等待用户确认新对象名；
 3. 将已生成的全部产物**整体迁移**到新对象名目录（含文件内对象名替换）。
 
+### S1.5 门禁前必核
+
+- [ ] `searchObject`（200）确认主对象名 + 全部 Include 名在 SAP 中**均不存在**，或用户已**书面确认覆盖**
+- [ ] `deployment-config.md` 中的对象名与 `searchObject` 结果一致
+- [ ] 对象类型（REPORT/CLAS/FUGR/INTF）已确定并记录
+
 ## 阶段 2：透明表列表与 DDIC 元数据
 
 ### 2.0 Z 表也必须拉 DDIC，禁止凭 FS 猜测（硬约束）
@@ -636,6 +649,14 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
 
 **硬规则**：`performance-estimate.md` 未生成或主表数据量 `> 100万` 且无分页方案 → 阶段 3 必须包含分页设计，禁止直接生成无限制在线 ALV。
 
+### S2 门禁前必核
+
+- [ ] 每张 FS 中出现的透明表都有对应 `metadata/tables/<TABNAME>.json`，且 `matched=true`
+- [ ] 失败表在 `_errors.md` 中有"已尝试路径 + 原始报错 + 下一步动作"
+- [ ] **关键字段的 DATATYPE/LENG 已确认**：每个将在 S4 用到的字段（特别是 NUMC、LANG、CUKY、DATS）的元数据值已在 S3 中用文字记录——**不在 S4 写代码时现翻 JSON**
+- [ ] `performance-estimate.md` 包含主表 COUNT + 量级分类 + 分页建议
+- [ ] **数据模型已验证**：对于多期金额表（FAGLFLEXT 等），已通过 `runQuery`（300）取至少一行真实数据，确认了每列的数据分布方式（如"每行 16 列可能全有值"）
+
 ## 阶段 3：开发技术文档 `output/<program>/docs/tech-design.md`
 
 在拥有全部 `output/<program>/metadata/tables/*.json` 后生成；**须以元数据为准**描述结构，且**必须**包含上文 **「字段契约」** 小节（FS 列 / 表.字段 / `output/<program>/metadata/tables/<TABNAME>.json` 溯源）。此外建议包含：
@@ -651,6 +672,14 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
   - **WHERE 条件排列**：主查询的 WHERE 字段顺序是否匹配目标表索引/主键顺序；避免否定条件（`<>`/`NOT`/`LIKE`）
   - **主查询数据量预估**：引用 `metadata/performance-estimate.md`，标注数据量级与分页策略
 - **待确认项**（标为 TBD，**不得**在阶段 4 无契约实现）
+
+### S3 门禁前必核
+
+- [ ] `tech-design.md` 含「字段契约」小节，每个输出列/选择字段都有对应的 表.字段 + 元数据文件路径
+- [ ] **动态字段名的数据类型已标注**：涉及 ASSIGN COMPONENT 拼接的变量（如 RPMAX NUMC 3），在契约中逐字段写清其 DATATYPE/LENG，S4 写代码时对照
+- [ ] `fs-coverage.md` 覆盖 FS 全部输出列和选择条件，无遗漏；状态列不为空
+- [ ] `template-mapping.md` 列出了新旧 INCLUDE 对应关系
+- [ ] `deployment-config.md` 已生成，包/请求号/模板状态明确
 
 ## 阶段 4：按类型生成代码（契约驱动 + 语法速查，非创意驱动）
 
@@ -766,7 +795,19 @@ FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` �
 
 **分级自查流程**（按 quickref §14.1–14.5 顺序，逐节检查，不得跳过）：
 
-**第零轮：DDIC 字面值类型长度（阶段 4 写完全部代码后第一条检查，hard gate）**
+**第负一轮：ASSIGN COMPONENT 动态字段名匹配（S4 写完代码后第一条检查，hard gate —— ZTEST003 血训）**
+
+`ASSIGN COMPONENT` 不会在语法检查或激活时报错——找不到组件时 `sy-subrc` 非 0，**不抛异常**，值保持 0。唯一症状是运行后对应列全 0。
+
+- 扫描代码中每个 `ASSIGN COMPONENT lv_name OF STRUCTURE ... TO <fs>`：
+  - 打开 `lv_name` 的拼接表达式，推导出所有可能的运行时值
+  - 对每个拼接变量，打开对应 `metadata/tables/<TABNAME>.json` 查其 **DATATYPE** 和 **LENG**
+  - **NUMC 类型陷阱**：若拼接变量是 NUMC n（n ≥ 2），确认拼出的字段名长度等于结构体字段名长度
+    - 例：`RPMAX` NUMC 3 → `|HSL{ iv_period }|` = `HSL001`（7 字符），但结构体字段是 `hsl01`（5 字符）→ **不匹配**
+  - 每个 `ASSIGN COMPONENT` 后必须有 `IF sy-subrc <> 0` 显式报错（不可默默跳过）
+- 检查方法：`grep -n "ASSIGN COMPONENT" output/<program>/abap/sources/*.abap`，逐条人工对照 metadata JSON
+
+**第零轮：DDIC 字面值类型长度（阶段 4 写完全部代码后第二条检查，hard gate）**
 - 扫描**每个** `WHERE` / `IF` 中与 DDIC 字段比较的字面值（`'ZH'`、`'EEKA'`、`'99991231'` 等字符串常量）
 - 对每个字面值，打开对应表 `output/<program>/metadata/tables/<TABNAME>.json`，核对目标字段的 `DATATYPE` 和 `LENG`
 - 重点陷阱字段（ZTEST102+ZTEST103 两次犯同样错误）：
@@ -940,6 +981,14 @@ S5.5=smoke-test-passed: yes/no
 - **提交范围**：每阶段新增/修改的产物文件（不要 `git add -A` 提交无关文件）。
 - **失败处理**：若 `git` 不可用或仓库未初始化 → 跳过并提示用户；不阻塞工作流。
 - **价值**：当阶段 4/5 反复修错时，可随时 `git diff` 查看变更；当需要回滚到某阶段时，可直接 `git checkout` 到对应提交。
+
+### S4 门禁前必核
+
+- [ ] **ASSIGN COMPONENT 字段名对齐**：代码中每个 `ASSIGN COMPONENT` 的拼接字符串，已逐条对照 metadata JSON 确认拼接变量的 DATATYPE/LENG。NUMC 类型 → 确认字段名长度一致（如 `iv_period+1(2)` 适配 RPMAX NUMC 3 → 结构体 2 位字段名）
+- [ ] 每个 `ASSIGN COMPONENT` 后有 `sy-subrc` 检查，失败时输出可识别的错误（不允许默默返回 0）
+- [ ] 6 轮反模式自检全部通过（字面值→DB→WHERE→内表→控制流→其他）
+- [ ] 源码文件结构与 `template-mapping.md` 一致（含 INCLUDE 清单完整）
+- [ ] `stage-gate.md` 中 S0→S3.6 全部为 yes
 
 ## 阶段 5：部署与激活
 
@@ -1153,6 +1202,15 @@ node scripts/verify_report.js <程序名> P_xxx=<值> "S_zzz=001-004,009-012,012
 
 **输出**：`output/<program>/docs/smoke-test.md`，包含：测试项、执行方式、结果、异常列说明。`smoke-test.md` 未生成 → 禁止标记 `S5=activated: yes`。
 
+### S5 / S5.5 门禁前必核
+
+- [ ] 部署成功（`deploy_rfc.js` 返回 `DEPLOY SUCCESS`，激活无红色错误）
+- [ ] **S5.5 三步不可跳过**：① `runQuery`（300）查源表取至少 2 个具体账户的完整字段值 → ② 手工计算出每组参数的预期输出 → ③ 跑 `verify_report.js` 至少 2 组参数并逐行比对
+- [ ] **每个金额列都非零检查**：`verify_report.js` 输出中，期初、本期发生、本年累计、期末余额四组列**各自至少有一条记录非零**。任一列全 0 → 回 S4 排查（常见根因：ASSIGN COMPONENT 字段名不匹配 / WHERE 条件过滤过度 / RPMAX 前导零）
+- [ ] **期末余额平衡校验**：取一条有实际发生额的账户，验算 `期初 + 本期借方 + 本期贷方(H 为负) = 期末`（±1 舍入误差可接受）
+- [ ] 外币列（若勾选 P_FWAERS）至少有一条非零记录（或标注"所选数据无外币发生额"）
+- [ ] `smoke-test.md` 已生成且包含数据抽样验证小节（含源表采样值 + 手工预期 + 对比结果）
+
 ## 增量更新机制（新增，FS 变更时复用已有产物）
 
 当用户说"改一下 FS"、"加一列"、"换一张表"时，代理**禁止**默认全量重跑 0→5。必须先判断变更范围，从最近可复用阶段恢复：
@@ -1206,9 +1264,11 @@ node scripts/verify_report.js <程序名> P_xxx=<值> "S_zzz=001-004,009-012,012
 - [ ] output/<program>/docs/template-mapping.md 已证明新程序结构对齐参考模板（含 INCLUDE）
 - [ ] output/<program>/docs/stage-gate.md 每阶段门禁已打勾（含 S0/S2.5/S3.6/S5.5）
 - [ ] Open SQL / 内表字段均可追溯到契约与 metadata（无凭空字段）
+- [ ] **S4 ASSIGN COMPONENT 专项**：每个 ASSIGN COMPONENT 的拼接变量已查 metadata DATATYPE/LENG，NUMC 类型已确认字段名长度匹配；每个后有 sy-subrc 检查
 - [ ] **5.0 部署前：已通过 MCP searchObject 确认目标程序名及所有 Include 名在 SAP 中不存在，或用户已书面确认覆盖**
 - [ ] 源码已 syntaxCheckCode
 - [ ] 激活成功或达到重试上限并记录原因
+- [ ] **S5.5 冒烟测试**：已执行 runQuery 源表采样 → 手工预期 → verify_report.js 多组比对，期初/本期/累计/期末四组列各自至少有一条非零记录
 - [ ] output/<program>/docs/smoke-test.md 已生成且通过最低验证（源码一致 / 执行探针 / ALV 列核对）
 - [ ] （推荐）每阶段产物已 git commit
 ```

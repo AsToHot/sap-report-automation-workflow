@@ -97,6 +97,40 @@ AND skat~spras = @sy-langu
 - **FOR ALL ENTRIES 类型匹配**：两边 ROLLNAME 不同 → 改用 SELECT 全表 + SORT + BINARY SEARCH
 - **CL_SALV_TABLE GUI Status**：`report = 'SAPLKKBL'`（不是 `sy-repid`）
 
+### 3.1 ASSIGN COMPONENT 动态字段名与 NUMC 类型不匹配（ZTEST003 血训，最高优先级）
+
+**症状**：程序无 Dump 无语法错，但所有动态计算列（本期发生、本年累计）全为 0，只有直接字段引用（如期初 `hslvt`）有值。
+
+**根因**：`ASSIGN COMPONENT` 生成的字段名与结构体字段名**字符数不一致**——`|HSL{ iv_period }|` 里 `iv_period` 是 RPMAX（NUMC **3**），拼出 `HSL001`，但结构体字段是 `HSL01`（固定 2 位数字）。ASSIGN 失败时 `sy-subrc ≠ 0`，值保持 CLEAR 后的 0，**不报错**。
+
+**发生场景**：凡是涉及 NUMC 类型用于动态字段名拼接的地方——RPMAX（期间）、MONAT（月份）、BUKRS（公司代码）等。
+
+**预判**：
+```bash
+# 阶段 4 写完代码后，在 abap/sources 目录执行：
+grep -n "ASSIGN COMPONENT" *.abap
+# → 对每个 ASSIGN COMPONENT，打开对应 metadata JSON 检查拼接变量的 DATATYPE 和 LENG
+# → 如果是 NUMC，确认拼接后的字段名字符数 == 结构体字段名字符数
+```
+
+**预防**：
+- 拼接时用 `iv_period+1(2)`（取后 2 位）或 `|HSL{ CONV numc2( iv_period ) }|`
+- 每个 `ASSIGN COMPONENT` 后**必须**检查 `sy-subrc`，`≠ 0` 时记日志或显式赋值一个不可能被忽略的哨兵值（如 `-99999999`）
+
+**独有补丁**：
+```abap
+" ✅ 正确：适配 NUMC 3 → 结构体 2 位字段名
+lv_name = |HSL{ iv_period+1(2) }|.
+ASSIGN COMPONENT lv_name OF STRUCTURE is_aggr TO <fs_val>.
+IF sy-subrc <> 0.
+  " 必须报错或设哨兵，禁止默默继续
+  MESSAGE |字段名生成失败: { lv_name }| TYPE 'E'.
+ENDIF.
+
+" ❌ 错误：iv_period='001' → 'HSL001' → 找不到组件 → 返回 0
+lv_name = |HSL{ iv_period }|.
+```
+
 ---
 
 ## 4. MCP/代理连通
