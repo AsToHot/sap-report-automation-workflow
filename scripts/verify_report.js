@@ -195,7 +195,7 @@ function printResults(result) {
 // ── 主流程 ──────────────────────────────────────────
 async function main() {
   console.log(`=== ${progName.toUpperCase()} 真实数据校验 (300) ===`);
-  console.log(`连接: ${CONN300.ashost} client=${CONN300.client} user=${CONN300.user}\n`);
+  console.log(`连接: client=${CONN300.client}\n`);
 
   const tasks = [];
 
