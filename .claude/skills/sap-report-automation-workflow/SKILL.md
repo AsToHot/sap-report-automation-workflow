@@ -129,11 +129,14 @@ description: |
 
 按顺序尝试，任一成功即视为「已就绪」：
 
-1. 调用 MCP `abap-adt` / `abap-adt` 的轻量工具（如 `objectTypes` 空参 `{}`）；成功返回即代表 MCP 与 SAP 联通。
-2. 若工具列表里**没有**该服务器条目 → MCP 未注册。
-3. 若有条目但调用**超时/报错** → MCP 已注册但未构建成功、代理未启动或配置错误。
+1. 调用 MCP `abap-adt` 的轻量工具（如 `healthcheck` 或 `objectTypes` 空参 `{}`）；成功返回即代表 MCP 与 SAP 200 开发机联通。
+2. **同样调用 `abap-adt-data` 的 `healthcheck` 或 `objectTypes`**；成功返回即代表 MCP 与 SAP 300 数据机联通。
+3. 若工具列表里**没有**这两个服务器条目 → MCP 未注册。
+4. 若有条目但调用**超时/报错** → MCP 已注册但代理未启动或配置错误。
 
-把判断结果明确分三类：`未注册` / `已注册未连通` / `已就绪`。据此进入 0.2、0.3 或直接跳到阶段 1。
+**必须两个 MCP 都通**才算「已就绪」。任一不通 → 进入 0.2/0.3/0.4 修复，**禁止跳步**。
+
+把判断结果明确输出：`abap-adt(200)=通/不通`、`abap-adt-data(300)=通/不通`。
 
 > **架构认知**：本 Skill 的 MCP 链路为 **mcp-abap-abap-adt-api (HTTP ADT REST) → rfc-proxy-server.js (localhost:9876) → node-rfc → SADT_REST_RFC_ENDPOINT → SAP**。所有 ADT 请求走完整链路；若失败需按链路分层排查（见 0.4.1）。
 
@@ -319,6 +322,8 @@ node scripts/test_rfc.js
 
 **只有第 5 层才属于 MCP 配置问题；前 4 层都属于环境 / 网络 / 账号 / 代理问题，必须在外部解决。**
 
+**业务工具运行时恢复**（`runQuery`/`tableContents`/`searchObject` 等返回连接错误时）：(1) `curl localhost:9876/sap/bc/adt/discovery`，不通则 `node rfc-proxy-server.js &`；(2) 重放原请求 1 次；(3) 仍失败 → 回退到上述 5 层排查；(4) 恢复动作记入 `_errors.md`，标注"代理连接问题"。
+
 ### 0.5 提示重启 → 再次验证连通（**自动重试**）
 
 - 明确告诉用户：**退出并重新启动 Claude Code**（或新开一个会话），以使 MCP 配置生效。
@@ -340,17 +345,44 @@ node scripts/test_rfc.js
 - 权限不足 → 输出缺失的权限对象列表 + 建议的角色/事务码（如 `PFCG` 分配 `SAP_BC_DWB_ABAPDEVELOPER`），停止工作流。
 - 探针结果记录到 `output/<program>/docs/stage-gate.md` 的 `S0=permission-check` 行。
 
-### 0.8 RFC 代理连接稳定性
+### 0.5.5 双系统架构（硬约束；违者重写）
 
-当前架构（MCP → HTTP → RFC 代理 → SAP）**无 HTTP 会话概念**：每次 MCP 工具调用都是独立的 HTTP 请求，由 `rfc-proxy-server.js` 即时翻译为 `SADT_REST_RFC_ENDPOINT` RFC 调用。RFC 连接由代理内部长连接维护，MCP 层无需预热或重登录。
+**200 = 开发机（无业务数据），300 = 业务数据机。程序只能在 200 上创建/修改/激活。**
 
-针对 `runQuery`、`tableContents`、`searchObject` 等业务工具，若返回连接类错误（`ECONNREFUSED`、`Connection broken`、`RFC_COMMUNICATION_FAILURE` 等），按以下顺序处理：
+| MCP 服务器 | 端口 | 客户端 | 只做一件事 |
+|-----------|------|--------|-----------|
+| `abap-adt` | 9876 | **200** | **开发**：创建/修改/激活/语法检查/锁 |
+| `abap-adt-data` | 9877 | **300** | **查数据**：`runQuery`/`tableContents`/`getObjectSource` |
 
-1. **检查代理进程**：`curl http://localhost:9876/sap/bc/adt/discovery` 是否返回 200？
-   - 失败 → 代理未运行或未就绪，执行 `node rfc-proxy-server.js &` 重启。
-2. **重放原请求 1 次**（报文不变）。
-3. 仍失败 → 进入 SQL/权限/网络诊断（见 0.4 故障分层定位）。
-4. 所有代理重连动作记录到 `output/<program>/metadata/tables/_errors.md`，明确标注"代理连接问题（非 SAP 业务逻辑错误）"。
+**MCP 工具→服务器 对照表（代理必须遵守）：**
+
+| 工具 | 走哪个 MCP |
+|------|-----------|
+| `runQuery`、`tableContents` | `abap-adt-data`（300，查业务数据） |
+| `getObjectSource`（查已有程序源码） | `abap-adt`（200） |
+| `getObjectSource`（查表 DDIC） | 均可，优先 `abap-adt-data`（300） |
+| `searchObject` | `abap-adt`（200，查开发对象） |
+| `createObject`、`setObjectSource`、`lock`、`unLock`、`deleteObject` | `abap-adt`（200） |
+| `activateByName`、`activateObjects`、`inactiveObjects` | `abap-adt`（200） |
+| `syntaxCheckCode` | `abap-adt`（200） |
+| `deploy_rfc.js` 脚本 | 内部直连 RFC，从 `.env` 读连接参数 → **必须走 200** |
+| `ddicElement`、`ddicRepositoryAccess` | 均可，优先 `abap-adt-data`（300） |
+
+**三条死线：**
+
+1. **禁止**用 `abap-adt`（200）的 `runQuery` 查业务表数据 → 200 无数据，查到 0 就怀疑代码写错是**严重误判**
+2. **禁止**把 `.env` 的 `SAP_CLIENT` 改成 300 → 这会让 `deploy_rfc.js` 部署到 300，破坏开发规范
+3. **禁止**因查不到数据而反复重写代码逻辑 → 先用 `abap-adt-data`（300）`runQuery` 确认数据存在
+
+**启动双代理（一次性命令）：**
+
+```bash
+cd "E:/ABAP工作流" && SAPNWRFC_HOME="E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk" PATH="$PATH:E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib" node rfc-proxy-server.js &
+sleep 2
+cd "E:/ABAP工作流" && SAPNWRFC_HOME="E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk" PATH="$PATH:E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib" node rfc-proxy-server.js --env=.env.300 &
+```
+
+**代理自检**：阶段 0 连通验证时，**必须同时验证两个 MCP 都通**。任一不通 → 按 0.4.1 分层排查，禁止只验一个就进入阶段 1。
 
 ### 0.6 切换 SAP 系统
 
@@ -567,6 +599,10 @@ D. 口头描述需求（无需文档）
 
 ## 阶段 2：透明表列表与 DDIC 元数据
 
+### 2.0 Z 表也必须拉 DDIC，禁止凭 FS 猜测（硬约束）
+
+FS 列出的表默认已在 SAP 中存在。**全部**走 `runQuery → DD03L` 拉取，禁止凭 FS 编造 metadata JSON。拉不到就记 `_errors.md`。
+
 1. 从 `functional-spec-ai.md` 提取透明表集合（正则 `[A-Z][A-Z0-9_]{3,}` 辅助 + 人工确认）。
 2. **默认执行策略采用方案A（强制）**：`DD03L 单表串行 + COUNT 校验`，禁止多表 `IN (...)` 合并查询作为主路径。
    - 2.1 `COUNT`：`SELECT COUNT(*) AS CNT FROM DD03L WHERE TABNAME = '<TAB>' [AND AS4LOCAL='A']`
@@ -574,14 +610,14 @@ D. 口头描述需求（无需文档）
    - 2.3 `rowNumber` 建议 `>= 2000`（按系统表宽度可提高）；若 `fetched_count < expected_count`，必须自动重试（最多 3 次）并记录分页/重试轨迹。
    - 2.4 每张表独立落盘，JSON 中必须包含 `expected_count`、`fetched_count`、`matched`。
 2. 对每张表拉取字段与键信息（**禁止**在 `ddicElement` 上反复试错当主路径）：
-  - **首选**：`getObjectSource`，`objectSourceUrl` = `/sap/bc/adt/ddic/tables/<表名小写>/source/main`，将返回的 `source` 原文写入 `output/<program>/metadata/tables/<TABNAME>.json`（可另附解析出的字段数组）。
-  - **备选**：`runQuery` 查询 `DD03L`（`AS4LOCAL = 'A'`），同样写入 JSON。
+    - **首选**：`runQuery` 查询 `DD03L`（`AS4LOCAL = 'A'`），写入 `output/<program>/metadata/tables/<TABNAME>.json`。
+    - **备选**：`getObjectSource`，`objectSourceUrl` = `/sap/bc/adt/ddic/tables/<表名小写>/source/main`（对传统透明表可能返回 404）。
   - **兜底 RFC**：`DDIF_FIELDINFO_GET`；详见 [reference.md](reference.md)。
 3. **失败补救是强制流程，不是可选项**：任一路径失败时必须自动切到下一兜底路径，直到三种路径均尝试完毕。禁止"报错即跳过"直接进入阶段 3/4。
 4. 若某对象不是透明表或名称错误，记录到 `output/<program>/metadata/tables/_errors.md` 并回到 FS 修正或用户确认。
 5. `output/<program>/metadata/tables/_errors.md` 必须包含：`对象名`、`已尝试路径`、`原始报错`、`下一步动作`（修正名 / 请求权限 / RFC 兜底），禁止只写一句"Internal server error"。
 6. **并发约束（新增）**：阶段 2 默认串行。仅在单表稳定后，允许最多 `2` 并发；出现一次 `Internal server error` 立即降回串行。
-7. **会话门禁（新增）**：若出现 `Internal server error`，必须先执行"0.8 会话保活与自动重登录"再决定是否记为对象失败，禁止在会话过期时把对象误记为失败。
+7. **会话门禁（新增）**：若出现 `Internal server error`，必须先执行"0.4.1 业务工具运行时恢复"再决定是否记为对象失败，禁止在会话过期时把对象误记为失败。
 
 ### 2.5 主查询性能预估（新增，阶段 2 末尾）
 
@@ -726,6 +762,17 @@ D. 口头描述需求（无需文档）
 代码写入文件后、调用 MCP 部署前，代理**必须**对照 [abap-syntax-quickref.md](abap-syntax-quickref.md) **§14「性能反模式」** 逐项自查（已按柏玺 ABAP 开发标准 V2.1 扩充）。
 
 **分级自查流程**（按 quickref §14.1–14.5 顺序，逐节检查，不得跳过）：
+
+**第零轮：DDIC 字面值类型长度（阶段 4 写完全部代码后第一条检查，hard gate）**
+- 扫描**每个** `WHERE` / `IF` 中与 DDIC 字段比较的字面值（`'ZH'`、`'EEKA'`、`'99991231'` 等字符串常量）
+- 对每个字面值，打开对应表 `output/<program>/metadata/tables/<TABNAME>.json`，核对目标字段的 `DATATYPE` 和 `LENG`
+- 重点陷阱字段（ZTEST102+ZTEST103 两次犯同样错误）：
+  - **SPRAS**: 类型 `LANG`、长度 **1**，必须用 `'1'`（中文）、`'E'`（英文）等单字节日程码，**禁止**用 `'ZH'`（2 字节溢出行 Dump）
+  - **LANG** 类型在 SKAT、CSKT、CEPCT、MAKT、T077X、T023T、ANKT 等描述表中广泛出现
+  - **CUKY** (币别): 长度 5，`'HKD'`/`'USD'` 等 ≤5 字符安全
+  - **CLNT** (客户端): 长度 3
+  - **NUMC** (数字字符): 按元数据 LENG，前导零必须保留
+- 检查方法：执行 `grep -n "'" output/<program>/abap/sources/*.abap` 提取所有字面值，逐条对照元数据 `LENG`
 
 **第一轮：DB 层（quickref §14.1）**
 - 所有 `SELECT` 都有 WHERE 条件且字段列表明确
@@ -931,12 +978,9 @@ S5.5=smoke-test-passed: yes/no
    - **禁止**用 MCP `setObjectSource` 直接上传 Include 名称（如 `ZxxxT01`、`ZxxxSEL`、`ZxxxF01`），因为该工具硬编码 `PROG/P`，会把 Include 创建为同名的可执行程序，造成类型错位。
    - **正确做法**：通过 `scripts/deploy_rfc.js` 直接调用原生 ADT REST API（`SADT_REST_RFC_ENDPOINT`），该脚本能正确处理 `PROG/I` 类型：创建 Include → Lock → 上传源码 → Unlock。
    - `activateObjects` 激活主程序时，系统会自动处理其引用的 Include。
-3. 若失败：解析返回中的 **消息/日志**（含行号、对象名），**分类处理**：
-  - 语法/拼写 → 改源码后 `setObjectSource`，再 `syntaxCheckCode`。
-  - 依赖未激活 → 先激活依赖对象或调整顺序。
-  - 锁/传输问题 → `unLock`、换请求或协调。
+3. 若失败：按附录「故障排查速查表」定位症状 → 修复 → 重试。
 4. 重复直至激活成功；可用 `inactiveObjects` 复核。
-5. **上限**：同一错误无进展重复超过约定次数（如 5 次）则停止自动重试，输出摘要请用户决策。
+5. **上限**：同一错误无进展重复超过 5 次则停止，输出摘要请用户决策。
 
 ### 5.3 锁管理（Lock Handle 持久化与恢复）
 
@@ -964,15 +1008,138 @@ S5.5=smoke-test-passed: yes/no
 - 用户报告"对象被锁" → 代理先检查 `.locks/` 是否有记录，如有则用 handle 解锁；如无则运行 `release_locks.js --force`（DEQUEUE_ALL）
 - `.locks/` 目录已加入 `.gitignore`，不会提交到 Git
 
-## 阶段 5.5：冒烟测试（新增，激活后强制）
+## 阶段 5.5：冒烟测试（激活后强制，含数据验证）
 
-激活通过 ≠ 程序可用。在标记 `S5=activated: yes` 前，代理必须执行至少以下验证之一（按系统权限从易到难）：
+激活通过 ≠ 程序可用。在标记 `S5=activated: yes` 前，代理必须执行以下验证：
 
-1. **语法与结构验证**（最低要求，总能执行）：
-   - 通过 `getObjectSource` 拉取激活后的源码，确认 `setObjectSource` 写入的代码与系统内一致（防止激活覆盖或截断）。
-   - 核对源码中是否包含字段契约中所有 `状态=Done` 的字段。
+### 5.5.1 数据抽样验证（硬性要求，新增，ZTEST104 血训）
 
-2. **执行探针**（若系统允许 `SUBMIT` 或后台执行）：
+**目的**：在 300 数据机上用 `abap-adt-data`（300）采样真实数据，验证程序逻辑的输入→输出是否正确。
+
+**步骤**：
+1. 在 `abap-adt-data`（300）上 `runQuery` 取一条主驱动表的真实数据（含全部关键字段）
+2. **手工计算预期输出**：按程序逻辑用 SQL 中获取的值一步步算出期望结果
+3. 对比预期与程序实现（可静态推导，不一定要执行程序）
+4. 结果记录到 `smoke-test.md` 的「数据抽样验证」小节
+
+**反例（ZTEST104 犯的错）**：
+- FAGLFLEXT 每行 **16 个 HSL 列都有值**，而不是只 RPMAX 对应的那一列有值
+- 如果代理在阶段 5.5 跑了一条 `runQuery` 看数据，立刻就会发现 CASE-rpmax 只取了 1/16 的数据
+- **禁止**激活后不看数据就声称"通过"——冒烟测试没有数据验证等于没做
+
+**最少输出格式**：
+```markdown
+## 数据抽样验证
+
+| 表 | 采样行 | 关键字段 | 值 |
+|----|--------|---------|-----|
+| FAGLFLEXT | RACCT=xxx, RPMAX=016 | HSL01-HSL16 | 100, 0, 0, ... |
+
+手工计算: 期间01 = HSL01(100) → 期初 XXX, 本期 XXX, 期末 XXX
+程序逻辑: 一致 / 不一致 (原因)
+```
+
+### 5.5.2 真实数据执行校验（新增，ZTEST001 实战验证，硬性要求）
+
+**目的**：在 300 数据机上通过 `ZREPORT_EXEC_VERIFY` 实际执行报表，用多组不同参数范围验证数据正确性——不只验 Dump，必须比对金额。
+
+**关键认知**：
+- 200 和 300 **代码同源**（同一套 ABAP 对象），部署到 200 即同步到 300
+- 300 有业务数据，200 无数据 → **必须直连 300 执行**
+- `ZREPORT_EXEC_VERIFY` 通过 `SUBMIT ... WITH SELECTION-TABLE` 执行报表 + `cl_salv_bs_runtime_info` 捕获 ALV 输出为 JSON
+
+---
+
+#### 评判标准（硬性规则 — ZTEST002 血训）
+
+判断程序是否正确，**唯一依据是 源表数据手工计算出的预期值**，**不是** 程序输出是否为 0 或等于全量。
+
+**正确顺序（不可颠倒）**：
+
+```
+① runQuery 查源表 → ② 手工计算预期值 → ③ 跑 verify_report.js → ④ 对比预期 vs 实际
+```
+
+**禁止模式**（ZTEST002 犯的错）：
+- ❌ 先跑 `verify_report.js`，看到子范围 003-006 全 0 就怀疑代码有 Bug
+- ❌ 反复修代码（改了 9 轮 ASSIGN/动态字段/CONCATENATE）却不先查源表
+- ❌ 看到子范围 009-012 等于全量就假定 lv_to 取错了
+
+**正确做法**（ZTEST002 验证后的流程）：
+```bash
+# 第一步：查源表，手工算预期
+# runQuery 取一条具体科目的 HSL01-HSL16 值
+# → 发现 1002000001 的 HSL01-HSL04 全是 0，HSL09-HSL12 有值
+# → 手工预期：003-006 金额 = 0，009-012 金额 = 全量（数据集中于此）
+
+# 第二步：跑程序拿实际值
+node scripts/verify_report.js ZTEST002 P_BUKRS=<实际参数> P_GJAHR=<实际年份> "S_RPMAX=001-016,003-006,009-012"
+
+# 第三步：逐行比对
+# 预期 003-006 = 0，实际 = 0 → PASS（金额为 0 但行数一致=正确）
+# 预期 009-012 = 全量，实际 = 全量 → PASS
+# 不一致 → 再查代码 Bug
+```
+
+**三条评判铁律**：
+1. **金额为 0 ≠ Bug**：数据可能在某些期间无活动，行数一致即可信
+2. **子范围 = 全范围 ≠ Bug**：数据可能集中在子范围内，先查源表分布
+3. **预期值必须来自源表手工计算**：不准用"全范围输出"当预期值套给子范围
+
+---
+
+#### 执行方式
+
+统一使用通用脚本 `scripts/verify_report.js`（参数不写死，所有字段名动态展示）：
+
+```bash
+# 单组参数
+node scripts/verify_report.js <程序名> P_xxx=<值> P_yyy=<值> S_zzz=<低>-<高>
+
+# 多组参数（逗号分隔 → 串行执行并逐一比对）
+node scripts/verify_report.js <程序名> P_xxx=<值> "S_zzz=001-004,009-012,012-012,001-016"
+```
+
+**参数规则**：
+- `P_xxx=值` → PARAMETERS 单值 (KIND=P, OPTION=EQ)
+- `S_xxx=低-高` → SELECT-OPTIONS 区间 (KIND=S, OPTION=BT)
+- `S_xxx=值` → SELECT-OPTIONS 单值 (KIND=S, OPTION=EQ)
+
+**脚本行为**：
+1. 读取 `.env.300` 连接 300 系统
+2. 对每组参数构建 `IT_RSPARAMS`
+3. 调用 `ZREPORT_EXEC_VERIFY` 执行目标报表
+4. **动态展示全部字段**（非数字列为标识，数字列为金额，不硬编码字段名）
+5. 输出每组的行数 + 合计金额 + 前 8 行明细
+6. 代理据此对照**步骤①的预期值**验证正确性
+
+---
+
+#### 代理验证清单（脚本执行前→后）
+
+**脚本执行前（必须先做）**：
+- [ ] `runQuery`（300）取 1-2 个具体科目的 HSLxx/TSLxx 原始值（含所有关键字段）
+- [ ] 手工计算每组参数的预期输出：期初、本期、本年累计、期末
+- [ ] 记录到 `smoke-test.md` 的「数据抽样验证」小节
+
+**脚本执行后（与预期比对）**：
+- [ ] 每组参数的输出行数是否合理（子范围行数 ≤ 全范围行数）
+- [ ] 实际金额 = 手工预期金额（允许浮点误差）
+- [ ] 期末余额 = 期初净值 + 本期借方 - 本期贷方（H 行值为负数，需注意符号）
+- [ ] 不一致 → 修代码 → 重新部署 → 重新执行本脚本，直到全组 PASS
+- [ ] **一致则标记 PASS，不再碰代码**（禁止无理由反复修改已验证的代码）
+
+**常见 Bug 速查**（ZTEST001 实战发现的 5 个错误）：
+| # | 症状 | 根因 | 修复 |
+|---|------|------|------|
+| 1 | 贷方列显示负数 | DRCRK=H 的 HSL/TSL 在 ABAP 中以负值存储，直接当正数输出 | 贷方列 `= ABS(lv_curr_h)` |
+| 2 | 期末余额符号反 | `lv_closing = open + S - H`，H 已为负→减负变加正 | `lv_closing = open + S + H` |
+| 3 | 子范围期间返回 0 行 | `rpmax IN @s_rpmax` 过滤了行（RPMAX=016 不在 001-004 中） | 从 WHERE 移除 RPMAX 过滤，期间只用于列选择 |
+| 4 | 6601* 科目辅助维度为空 | 缺少 RFAREA 查询 + TFKBT 关联 | 增加 RFAREA 查询 + 分支逻辑 |
+| 5 | 计划数据混入 | 未过滤 RRCTY/RVERS | WHERE 增加 `rrcty='0' AND rvers='001'` |
+| 6 | 子范围 003-006 全 0 / 009-012 = 全量，反复修代码 9 轮 | **数据分布问题，不是 Bug**：未先查源表手工算预期，误把"金额=0"当 Bug | 先 `runQuery`（300）查具体科目的 HSLxx 值 → 手工算各组预期 → 再跑 `verify_report.js` 比对；金额=0 但行数一致 = PASS |
+
+### 5.5.3 结构验证（最低要求）
    - 用 `runQuery` 或 MCP 等价工具执行一次带最严格选择条件的查询，验证 WHERE 条件在真实数据上是否返回非空结果。
    - 若返回 0 行 → 不一定是错误，但必须在 `output/<program>/docs/smoke-test.md` 中标注"选择条件过严可能导致空输出"。
 
@@ -1133,9 +1300,6 @@ const body = resp.MESSAGE_BODY
 | 创建程序报 **409** | 程序已存在 | **必须问用户**：提供新程序名或确认覆盖。禁止代理自动跳过 |
 | 上传源码报 **400/403** | `lockHandle` 缺失、过期或编码问题 | 重新 Lock 获取新 handle；确保 `lockHandle` 已 URL-encode |
 | 激活失败 | 语法错误或依赖对象未激活 | 先修正源码语法；检查 INCLUDE 是否已上传并解锁 |
-| `setObjectSource` 上传 Include 后，SAP 里按 Include 搜索不到 | `setObjectSource` 硬编码 `PROG/P`，把 Include 创建成了同名的**可执行程序** | **禁止**用 `setObjectSource` 直接传 Include 名称；改用 `scripts/deploy_rfc.js` 通过原生 ADT REST API 逐对象部署 |
-| `ActivateObjects` 对 `PROG/I` 返回 "No suitable resource" | `buildObjectUri` 缺少 `PROG/I` 映射，生成错误 URI `/sap/bc/adt/prog/i/...` | 不单独激活 Include，只激活主程序；主程序激活时系统会自动处理其引用的 Include |
-| 调用 `INSERT_REPORT` 报"函数不存在" | 使用了非标准 FM | **禁止**使用 `INSERT_REPORT`，改用 `SADT_REST_RFC_ENDPOINT` + ADT REST API |
 | 激活报 HTTP 200 但对象实际未激活（假成功） | `activate-objects.js` 解析器仅匹配 `<entry>`，漏掉了 SAP 返回的 `<msg type="E">` 格式错误 | 重写解析器：同时匹配 `<msg type="E|A">`、`<atom:entry>`（category=error）、`<entry>` 三种格式，任何一条命中即视为激活失败 |
 | 语法检查端点返回 **405** | 当前 SAP 版本不支持该 ADT 语法检查端点 | `syntax-check.js` 捕获 405 → 返回 `{ unavailable: true }`，由激活阶段兜底验证语法 |
 | 文本元素 / GUI Status 写入报 **404** | 当前 SAP 版本的 ADT REST API 不支持通过该端点写入文本元素和 GUI Status | 标记为已知限制；部署后由用户在 SE80 中手动维护，并在 `smoke-test.md` 中记录 |
