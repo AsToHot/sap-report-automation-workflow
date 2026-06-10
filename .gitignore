@@ -4,6 +4,9 @@ _dist/
 .claude/settings.json
 .claude/settings.local.json
 .env
+.env.data
+.env.test
+.env.prd
 .env.300
 .locks/
 spec/*.docx

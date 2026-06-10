@@ -88,17 +88,39 @@ try {
 const url = env.SAP_URL || '';
 const urlMatch = url.match(/^(?:https?:\/\/)?([^:\/]+)(?::(\d+))?/);
 const ashost = urlMatch ? urlMatch[1] : '';
-const port = urlMatch ? parseInt(urlMatch[2] || '8000', 10) : 8000;
-const sysnr = env.SAP_SYSNR || String(port).slice(-2);
+const portStr = urlMatch ? urlMatch[2] : undefined;
+const port = portStr ? parseInt(portStr, 10) : undefined;
+
+// sysnr: explicit config always wins; derive from port only as fallback
+let sysnr;
+if (env.SAP_SYSNR !== undefined && env.SAP_SYSNR !== '') {
+  sysnr = env.SAP_SYSNR;
+} else if (port !== undefined) {
+  sysnr = String(port).slice(-2);
+} else {
+  sysnr = '';
+}
 
 const rfcParams = {
   ashost: ashost,
   sysnr: sysnr,
-  client: env.SAP_CLIENT || '200',
+  client: env.SAP_CLIENT || '',
   user: env.SAP_USERNAME || env.SAP_USER || '',
   passwd: env.SAP_PASSWORD || env.SAP_PASS || '',
   lang: env.SAP_LANGUAGE || 'ZH',
 };
+
+// Validate required fields
+const missing = [];
+if (!ashost) missing.push('SAP_URL (ashost)');
+if (!sysnr) missing.push('SAP_SYSNR (or port-derived)');
+if (!rfcParams.client) missing.push('SAP_CLIENT');
+if (!rfcParams.user) missing.push('SAP_USERNAME');
+if (missing.length > 0) {
+  console.error(`[FATAL] Missing required configuration: ${missing.join(', ')}`);
+  console.error('        Check your .env file.');
+  process.exit(1);
+}
 
 if (env.SAP_ROUTER) {
   rfcParams.saprouter = env.SAP_ROUTER;
