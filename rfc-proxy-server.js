@@ -43,17 +43,39 @@ if (fs.existsSync(envPath)) {
 const url = env.SAP_URL || '';
 const urlMatch = url.match(/^(?:https?:\/\/)?([^:\/]+)(?::(\d+))?/);
 const ashost = urlMatch ? urlMatch[1] : '';
-const port = urlMatch ? parseInt(urlMatch[2] || '8000', 10) : 8000;
-const sysnr = env.SAP_SYSNR || String(port).slice(-2);
+const portStr = urlMatch ? urlMatch[2] : undefined;
+const port = portStr ? parseInt(portStr, 10) : undefined;
+
+// sysnr: explicit config always wins; derive from port only as fallback
+let sysnr;
+if (env.SAP_SYSNR !== undefined && env.SAP_SYSNR !== '') {
+  sysnr = env.SAP_SYSNR;
+} else if (port !== undefined) {
+  sysnr = String(port).slice(-2);
+} else {
+  console.error('[FATAL] Cannot determine SAP_SYSNR — set SAP_SYSNR in .env or use standard port (80XX)');
+  process.exit(1);
+}
 
 const rfcParams = {
   ashost,
   sysnr,
-  client: env.SAP_CLIENT || '200',
+  client: env.SAP_CLIENT || '',
   user: env.SAP_USERNAME || env.SAP_USER || '',
   passwd: env.SAP_PASSWORD || env.SAP_PASS || '',
   lang: env.SAP_LANGUAGE || 'ZH',
 };
+
+// Validate required fields
+if (!rfcParams.client) {
+  console.error('[FATAL] SAP_CLIENT is required in .env');
+  process.exit(1);
+}
+if (!rfcParams.user) {
+  console.error('[FATAL] SAP_USERNAME is required in .env');
+  process.exit(1);
+}
+
 if (env.SAP_ROUTER) rfcParams.saprouter = env.SAP_ROUTER;
 
 const PROXY_PORT = parseInt(env.RFC_PROXY_PORT || '9876', 10);

@@ -6,6 +6,9 @@
  *   node scripts/verify_report.js ZTEST001 P_BUKRS=6030 P_GJAHR=2025 S_RPMAX=001-004
  *   node scripts/verify_report.js ZTEST001 P_BUKRS=6030 P_GJAHR=2025 S_RPMAX=001-004,009-012,012-012,001-016
  *
+ * 通过 --env= 指定数据系统配置文件（默认 .env.data）：
+ *   node scripts/verify_report.js --env=.env.test ZTEST001 P_BUKRS=6030
+ *
  * 参数规则:
  *   P_xxx=值        → PARAMETERS 单值 (KIND=P, OPTION=EQ)
  *   S_xxx=低-高      → SELECT-OPTIONS 区间 (KIND=S, OPTION=BT)
@@ -15,46 +18,46 @@
  * 前提:
  *   - SAPNWRFC_HOME 环境变量指向 NW-RFC-SDK/nwrfcsdk
  *   - PATH 包含 nwrfcsdk/lib
- *   - 目标报表已在 200(300) 部署激活
- *   - ZREPORT_EXEC_VERIFY FM 在目标系统可用
+ *   - 目标报表已在 SAP 系统部署激活
+ *   - ZREPORT_EXEC_VERIFY FM 在数据系统可用（部署方法见 docs/ZREPORT_EXEC_VERIFY.txt）
  */
 
 const path = require('path');
 const fs = require('fs');
+const { loadEnv, buildRfcParams, validateRfcParams } = require('./modules/env');
 
-// ── 加载 300 连接参数 ──────────────────────────────
-function loadEnv(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const env = {};
-  fs.readFileSync(filePath, 'utf-8').split('\n').forEach(line => {
-    const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.+?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  });
-  return env;
+// ── 解析 --env= 参数（默认 .env.data） ─────────────────────
+let envFile = '.env.data';
+const argStart = process.argv.findIndex(a => a === '--env=' || a.startsWith('--env='));
+if (argStart >= 0) {
+  const arg = process.argv[argStart];
+  envFile = arg.startsWith('--env=') ? arg.split('=')[1] : process.argv[argStart + 1];
+  // Remove --env= from argv so parameter parsing works correctly
+  process.argv.splice(argStart, arg.startsWith('--env=') ? 1 : 2);
 }
-const env300 = loadEnv(path.join(__dirname, '..', '.env.300'));
 
-// 从 .env.300 读取连接参数 — 所有字段必须显式配置，不使用硬编码默认值
-if (!env300.SAP_URL) {
-  console.error('[FATAL] .env.300 缺少 SAP_URL — 无法连接 300 系统');
+// ── 加载数据系统连接参数 ─────────────────────────────────
+const envData = loadEnv(envFile);
+if (!envData.SAP_URL || !envData.SAP_CLIENT) {
+  console.error(`[FATAL] ${envFile} 缺少 SAP_URL 或 SAP_CLIENT — 无法连接数据系统`);
+  console.error('');
+  console.error('数据系统配置文件用于 verify_report.js 查业务数据。');
+  console.error('请按 .env.example 格式创建，例如 .env.data 或 .env.test。');
+  console.error('如需在测试前先部署 ZREPORT_EXEC_VERIFY，见 docs/ZREPORT_EXEC_VERIFY.txt');
   process.exit(1);
 }
-const CONN300 = {
-  ashost: env300.SAP_URL.replace(/^https?:\/\//, '').replace(/:\d+$/, ''),
-  sysnr: env300.SAP_SYSNR || String(parseInt(
-    env300.SAP_URL.match(/:(\d+)$/)?.[1] || '8000'
-  ) % 100).padStart(2, '0'),
-  client: env300.SAP_CLIENT || '300',
-  user:   env300.SAP_USERNAME || '',
-  passwd: env300.SAP_PASSWORD || '',
-  lang:   env300.SAP_LANGUAGE || 'ZH',
-  ...(env300.SAP_ROUTER ? { saprouter: env300.SAP_ROUTER } : {}),
-};
+
+const rfcParams = buildRfcParams(envData);
+const validation = validateRfcParams(rfcParams);
+if (!validation.valid) {
+  console.error(`[FATAL] ${envFile} 缺少: ${validation.missing.join(', ')}`);
+  process.exit(1);
+}
 
 // ── 命令行解析 ─────────────────────────────────────
 const progName = process.argv[2];
 if (!progName) {
-  console.error('用法: node scripts/verify_report.js <程序名> [P_xxx=值] [S_xxx=低-高] [...]');
+  console.error('用法: node scripts/verify_report.js [--env=.env.data] <程序名> [P_xxx=值] [S_xxx=低-高] [...]');
   console.error('示例: node scripts/verify_report.js ZTEST001 P_BUKRS=6030 P_GJAHR=2025 S_RPMAX=001-004,009-012');
   process.exit(1);
 }
@@ -111,7 +114,7 @@ async function runVerify(report, rsparams, label) {
   let client;
   try {
     const rfc = require('node-rfc');
-    client = new rfc.Client(CONN300);
+    client = new rfc.Client(rfcParams);
     await client.open();
 
     const res = await client.call('ZREPORT_EXEC_VERIFY', {
@@ -157,7 +160,11 @@ function printResults(result) {
 
   if (error) {
     console.log(`[ERR] ${error}`);
-    console.log('[FIX] 确保: 1) NW-RFC-SDK 已安装 2) 300 VPN 已连接 3) 报表已激活');
+    if (error.includes('ZREPORT_EXEC_VERIFY')) {
+      console.log('[FIX] ZREPORT_EXEC_VERIFY FM 未部署。部署方法见 docs/ZREPORT_EXEC_VERIFY.txt');
+    } else {
+      console.log('[FIX] 确保: 1) NW-RFC-SDK 已安装 2) 网络/VPN 已连接 3) 报表已激活');
+    }
     return;
   }
 
@@ -194,8 +201,8 @@ function printResults(result) {
 
 // ── 主流程 ──────────────────────────────────────────
 async function main() {
-  console.log(`=== ${progName.toUpperCase()} 真实数据校验 (300) ===`);
-  console.log(`连接: client=${CONN300.client}\n`);
+  console.log(`=== ${progName.toUpperCase()} 真实数据校验 ===`);
+  console.log(`配置: ${envFile} | client=${rfcParams.client} | ashost=${rfcParams.ashost}\n`);
 
   const tasks = [];
 
@@ -227,7 +234,7 @@ async function main() {
   }
 
   console.log(`\n=== 完成: ${tasks.length} 组参数测试 ===`);
-  console.log('提示: 用 MCP runQuery (300) 查询源表对照验证');
+  console.log('提示: 用 MCP runQuery (数据系统) 查询源表对照验证');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

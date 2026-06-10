@@ -1,30 +1,10 @@
 const path = require("path");
 const fs = require("fs");
 const noderfc = require("node-rfc");
+const { loadEnv, buildRfcParams } = require("./modules/env");
 
-const envPath = path.resolve(__dirname, "..", ".env");
-const env = {};
-if (fs.existsSync(envPath)) {
-  const raw = fs.readFileSync(envPath, "utf-8");
-  for (const line of raw.split(/\r?\n/)) {
-    const m = line.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
-    if (m) env[m[1]] = m[2].trim();
-  }
-}
-
-const url = env.SAP_URL || "";
-const urlMatch = url.match(/^(?:https?:\/\/)?([^:\/]+)(?::(\d+))?/);
-const ashost = urlMatch ? urlMatch[1] : "";
-const port = urlMatch ? parseInt(urlMatch[2] || "8000", 10) : 8000;
-const sysnr = env.SAP_SYSNR || String(port).slice(-2);
-
-const rfcParams = {
-  ashost: ashost, sysnr: sysnr, client: env.SAP_CLIENT || "200",
-  user: env.SAP_USERNAME || env.SAP_USER || "",
-  passwd: env.SAP_PASSWORD || env.SAP_PASS || "",
-  lang: env.SAP_LANGUAGE || "ZH",
-};
-if (env.SAP_ROUTER) rfcParams.saprouter = env.SAP_ROUTER;
+const env = loadEnv();
+const rfcParams = buildRfcParams(env);
 
 const client = new noderfc.Client(rfcParams);
 

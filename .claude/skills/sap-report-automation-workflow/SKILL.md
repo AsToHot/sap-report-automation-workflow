@@ -1,6 +1,6 @@
 ---
 name: sap-report-automation-workflow
-version: 1.2
+version: 1.3
 description: |
   End-to-end SAP ABAP 开发对象自动化（与 Eclipse ADT 能力对齐）：通过本地 RFC 代理将 HTTP ADT REST 请求转译为 RFC SADT_REST_RFC_ENDPOINT 调用 SAP；支持 **REPORT 报表**、**CLASS 类池**、**FUGR 函数组 / Function Module**、**INTF 接口**、**Include** 等全部常见 ABAP 开发对象类型。FS 规范化、透明表 DDIC、技术文档、按模板写 ABAP、激活循环；Open SQL 与内表字段必须由 metadata 驱动、禁止脱离元数据自由发挥。触发场景：用户要写 ABAP 代码（报表/类/函数/接口/增强）、从 FS 到部署、切换 SAP、配置或安装 MCP、login 失败。**MCP 未就绪时代理必须自动 npm build + 写 .mcp.json + 启动 rfc-proxy-server，不得把安装推给用户**。GitHub MCP：https://github.com/mario-andreschak/mcp-abap-abap-adt-api
 
@@ -132,14 +132,14 @@ description: |
 
 按顺序尝试，任一成功即视为「已就绪」：
 
-1. 调用 MCP `abap-adt` 的轻量工具（如 `healthcheck` 或 `objectTypes` 空参 `{}`）；成功返回即代表 MCP 与 SAP 200 开发机联通。
-2. **同样调用 `abap-adt-data` 的 `healthcheck` 或 `objectTypes`**；成功返回即代表 MCP 与 SAP 300 数据机联通。
+1. 调用 MCP `abap-adt` 的轻量工具（如 `healthcheck` 或 `objectTypes` 空参 `{}`）；成功返回即代表 MCP 与开发系统联通。
+2. **同样调用 `abap-adt-data` 的 `healthcheck` 或 `objectTypes`**；成功返回即代表 MCP 与数据系统联通。
 3. 若工具列表里**没有**这两个服务器条目 → MCP 未注册。
 4. 若有条目但调用**超时/报错** → MCP 已注册但代理未启动或配置错误。
 
 **必须两个 MCP 都通**才算「已就绪」。任一不通 → 进入 0.2/0.3/0.4 修复，**禁止跳步**。
 
-把判断结果明确输出：`abap-adt(200)=通/不通`、`abap-adt-data(300)=通/不通`。
+把判断结果明确输出：`abap-adt(开发)=通/不通`、`abap-adt-data(数据)=通/不通`。
 
 > **架构认知**：本 Skill 的 MCP 链路为 **mcp-abap-abap-adt-api (HTTP ADT REST) → rfc-proxy-server.js (localhost:9876) → node-rfc → SADT_REST_RFC_ENDPOINT → SAP**。所有 ADT 请求走完整链路；若失败需按链路分层排查（见 0.4.1）。
 
@@ -350,39 +350,41 @@ node scripts/test_rfc.js
 
 ### 0.5.5 双系统架构（硬约束；违者重写）
 
-**200 = 开发机（无业务数据），300 = 业务数据机。程序只能在 200 上创建/修改/激活。**
+**开发系统 ≠ 数据系统。程序只能在开发系统上创建/修改/激活。**
 
-| MCP 服务器 | 端口 | 客户端 | 只做一件事 |
-|-----------|------|--------|-----------|
-| `abap-adt` | 9876 | **200** | **开发**：创建/修改/激活/语法检查/锁 |
-| `abap-adt-data` | 9877 | **300** | **查数据**：`runQuery`/`tableContents`/`getObjectSource` |
+| MCP 服务器 | 默认端口 | 配置文件 | 只做一件事 |
+|-----------|---------|---------|-----------|
+| `abap-adt` | 9876 | `.env` | **开发**：创建/修改/激活/语法检查/锁 |
+| `abap-adt-data` | 9877 | `.env.data`（或其他用户指定名） | **查数据**：`runQuery`/`tableContents`/`getObjectSource` |
+
+> **配置文件命名**：`.env` 和 `.env.data` 只是默认名称——不编码客户端编号。用户的开发系统客户端可能是 100、数据系统可能是 200，取决于实际环境。代理**不得**假设"200=开发、300=数据"。
 
 **MCP 工具→服务器 对照表（代理必须遵守）：**
 
 | 工具 | 走哪个 MCP |
 |------|-----------|
-| `runQuery`、`tableContents` | `abap-adt-data`（300，查业务数据） |
-| `getObjectSource`（查已有程序源码） | `abap-adt`（200） |
-| `getObjectSource`（查表 DDIC） | 均可，优先 `abap-adt-data`（300） |
-| `searchObject` | `abap-adt`（200，查开发对象） |
-| `createObject`、`setObjectSource`、`lock`、`unLock`、`deleteObject` | `abap-adt`（200） |
-| `activateByName`、`activateObjects`、`inactiveObjects` | `abap-adt`（200） |
-| `syntaxCheckCode` | `abap-adt`（200） |
-| `deploy_rfc.js` 脚本 | 内部直连 RFC，从 `.env` 读连接参数 → **必须走 200** |
-| `ddicElement`、`ddicRepositoryAccess` | 均可，优先 `abap-adt-data`（300） |
+| `runQuery`、`tableContents` | `abap-adt-data`（数据系统，查业务数据） |
+| `getObjectSource`（查已有程序源码） | `abap-adt`（开发系统） |
+| `getObjectSource`（查表 DDIC） | 均可，优先 `abap-adt-data`（数据系统） |
+| `searchObject` | `abap-adt`（开发系统，查开发对象） |
+| `createObject`、`setObjectSource`、`lock`、`unLock`、`deleteObject` | `abap-adt`（开发系统） |
+| `activateByName`、`activateObjects`、`inactiveObjects` | `abap-adt`（开发系统） |
+| `syntaxCheckCode` | `abap-adt`（开发系统） |
+| `deploy_rfc.js` 脚本 | 内部直连 RFC，从 `.env` 读连接参数 → **必须走开发系统** |
+| `ddicElement`、`ddicRepositoryAccess` | 均可，优先 `abap-adt-data`（数据系统） |
 
 **三条死线：**
 
-1. **禁止**用 `abap-adt`（200）的 `runQuery` 查业务表数据 → 200 无数据，查到 0 就怀疑代码写错是**严重误判**
-2. **禁止**把 `.env` 的 `SAP_CLIENT` 改成 300 → 这会让 `deploy_rfc.js` 部署到 300，破坏开发规范
-3. **禁止**因查不到数据而反复重写代码逻辑 → 先用 `abap-adt-data`（300）`runQuery` 确认数据存在
+1. **禁止**用开发系统的 `runQuery` 查业务表数据 → 开发系统可能无数据，查到 0 就怀疑代码写错是**严重误判**
+2. **禁止**把 `.env` 的 `SAP_CLIENT` 改成数据系统客户端 → 这会让 `deploy_rfc.js` 部署到数据系统，破坏开发规范
+3. **禁止**因查不到数据而反复重写代码逻辑 → 先用数据系统 `runQuery` 确认数据存在
 
-**启动双代理（一次性命令）：**
+**启动双代理（一次性命令；端口按用户实际配置）：**
 
 ```bash
-cd "E:/ABAP工作流" && SAPNWRFC_HOME="E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk" PATH="$PATH:E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib" node rfc-proxy-server.js &
+cd <项目根目录> && SAPNWRFC_HOME="<NW-RFC-SDK路径>" PATH="$PATH:<NW-RFC-SDK路径>/lib" node rfc-proxy-server.js &
 sleep 2
-cd "E:/ABAP工作流" && SAPNWRFC_HOME="E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk" PATH="$PATH:E:/ABAP工作流/NW-RFC-SDK/nwrfcsdk/lib" node rfc-proxy-server.js --env=.env.300 &
+cd <项目根目录> && SAPNWRFC_HOME="<NW-RFC-SDK路径>" PATH="$PATH:<NW-RFC-SDK路径>/lib" node rfc-proxy-server.js --env=.env.data &
 ```
 
 **代理自检**：阶段 0 连通验证时，**必须同时验证两个 MCP 都通**。任一不通 → 按 0.4.1 分层排查，禁止只验一个就进入阶段 1。
@@ -1067,7 +1069,7 @@ S5.5=smoke-test-passed: yes/no
 
 ### 5.5.1 数据抽样验证（硬性要求，新增，ZTEST104 血训）
 
-**目的**：在 300 数据机上用 `abap-adt-data`（300）采样真实数据，验证程序逻辑的输入→输出是否正确。
+**目的**：在数据系统上用 `abap-adt-data` 采样真实数据，验证程序逻辑的输入→输出是否正确。
 
 **步骤**：
 1. 在 `abap-adt-data`（300）上 `runQuery` 取一条主驱动表的真实数据（含全部关键字段）
@@ -1094,12 +1096,14 @@ S5.5=smoke-test-passed: yes/no
 
 ### 5.5.2 真实数据执行校验（新增，ZTEST001 实战验证，硬性要求）
 
-**目的**：在 300 数据机上通过 `ZREPORT_EXEC_VERIFY` 实际执行报表，用多组不同参数范围验证数据正确性——不只验 Dump，必须比对金额。
+**目的**：在数据系统上通过 `ZREPORT_EXEC_VERIFY` 实际执行报表，用多组不同参数范围验证数据正确性——不只验 Dump，必须比对金额。
 
 **关键认知**：
-- 200 和 300 **代码同源**（同一套 ABAP 对象），部署到 200 即同步到 300
-- 300 有业务数据，200 无数据 → **必须直连 300 执行**
+- 开发机和数据机**代码同源**（同一套 ABAP 对象），部署到开发机即同步到数据机
+- 数据机有业务数据，开发机无数据 → **必须直连数据系统执行**
 - `ZREPORT_EXEC_VERIFY` 通过 `SUBMIT ... WITH SELECTION-TABLE` 执行报表 + `cl_salv_bs_runtime_info` 捕获 ALV 输出为 JSON
+
+**前置条件**：`ZREPORT_EXEC_VERIFY` FM 必须已在数据系统上部署。详见 [ZREPORT_EXEC_VERIFY 部署说明](#zreport_exec_verify-部署说明)。
 
 ---
 
@@ -1146,11 +1150,15 @@ node scripts/verify_report.js ZTEST002 P_BUKRS=<实际参数> P_GJAHR=<实际年
 统一使用通用脚本 `scripts/verify_report.js`（参数不写死，所有字段名动态展示）：
 
 ```bash
+# 默认读取 .env.data 连接数据系统
 # 单组参数
 node scripts/verify_report.js <程序名> P_xxx=<值> P_yyy=<值> S_zzz=<低>-<高>
 
 # 多组参数（逗号分隔 → 串行执行并逐一比对）
 node scripts/verify_report.js <程序名> P_xxx=<值> "S_zzz=001-004,009-012,012-012,001-016"
+
+# 指定其他数据系统配置文件
+node scripts/verify_report.js --env=.env.test <程序名> P_xxx=<值>
 ```
 
 **参数规则**：
@@ -1159,7 +1167,7 @@ node scripts/verify_report.js <程序名> P_xxx=<值> "S_zzz=001-004,009-012,012
 - `S_xxx=值` → SELECT-OPTIONS 单值 (KIND=S, OPTION=EQ)
 
 **脚本行为**：
-1. 读取 `.env.300` 连接 300 系统
+1. 读取 `.env.data`（或 `--env=` 指定的配置文件）连接数据系统
 2. 对每组参数构建 `IT_RSPARAMS`
 3. 调用 `ZREPORT_EXEC_VERIFY` 执行目标报表
 4. **动态展示全部字段**（非数字列为标识，数字列为金额，不硬编码字段名）
@@ -1402,8 +1410,11 @@ scripts/
     ├── unlock-object.js             # POST ...?_action=UNLOCK
     ├── create-program.js            # POST /sap/bc/adt/programs/programs
     ├── create-include.js            # POST /sap/bc/adt/programs/includes
+    ├── create-fugr.js               # POST /sap/bc/adt/functions/groups
+    ├── create-fm.js                 # POST /sap/bc/adt/functions/groups/<fugr>/fmodules
     ├── upload-program-source.js     # PUT /programs/programs/{name}/source/main
     ├── upload-include-source.js     # PUT /programs/includes/{name}/source/main
+    ├── upload-fm-source.js          # PUT /functions/groups/<fugr>/fmodules/<fm>/source/main
     ├── syntax-check.js              # POST .../source/main?method=check
     ├── activate-objects.js          # POST /sap/bc/adt/activation?method=activate
     ├── with-lock.js                 # 自动锁管理组合（lock → fn → unlock）
@@ -1425,6 +1436,9 @@ scripts/
 | `modules/unlock-object.js` | `POST ...?_action=UNLOCK&lockHandle={h}` | 释放锁（忽略错误） |
 | `modules/syntax-check.js` | `POST .../source/main?method=check` | 语法检查；若系统返回 405 → 标记 `unavailable`，由激活阶段兜底验证 |
 | `modules/activate-objects.js` | `POST /sap/bc/adt/activation?method=activate` | 激活对象；必须解析 `<msg type="E">`、`<atom:entry>`、`<entry>` 三种错误格式 |
+| `modules/create-fugr.js` | `POST /sap/bc/adt/functions/groups` | 创建函数组 FUGR/F，处理 409 已存在 |
+| `modules/create-fm.js` | `POST /sap/bc/adt/functions/groups/<fugr>/fmodules` | 在函数组内创建 FM FUGR/FF |
+| `modules/upload-fm-source.js` | `PUT /functions/groups/<fugr>/fmodules/<fm>/source/main` | 上传 FM 源码（含接口参数定义） |
 | `modules/with-lock.js` | 组合 lock + fn + unlock | **保证无论 fn 成功/异常都释放锁** |
 
 ### 独立辅助脚本速查
@@ -1435,7 +1449,7 @@ scripts/
 |------|------|------|
 | `rfc-proxy-server.js` | 阶段 0 启动 RFC 代理 | 监听 `127.0.0.1:9876`，将 HTTP ADT REST 请求转译为 `SADT_REST_RFC_ENDPOINT` RFC 调用。启动后常驻后台。 |
 | `scripts/test_mcp_login.js` | MCP 连通性端到端测试 | 自动检查代理是否运行 → 启动代理（如需）→ 对 MCP 发送 `objectTypes` JSON-RPC 请求 → 输出 `PASSED`/`FAILED`。 |
-| `scripts/verify_report.js` | 阶段 5.5 冒烟测试 | 在 300 系统执行报表，捕获 ALV 输出为 JSON，动态字段展示，支持多组参数并行测试。 |
+| `scripts/verify_report.js` | 阶段 5.5 冒烟测试 | 在数据系统执行报表，捕获 ALV 输出为 JSON，动态字段展示，支持多组参数并行测试。默认读取 `.env.data`，支持 `--env=` 指定其他配置。 |
 | `scripts/release_locks.js` | 应急释放锁 | 通过 RFC 调用 `DEQUEUE_ALL` 释放当前用户持有的全部 SAP 锁。 |
 | `scripts/unlock_prog.js` | 应急解锁指定程序 | 通过 RFC 直接发送 UNLOCK ADT 请求，需手动填入 `lockHandle`。 |
 | `scripts/unlock_includes.js` / `v2` | 应急解锁 Include | 同上，针对 Include 对象。v2 为改进版本。 |
@@ -1554,3 +1568,101 @@ scripts/
 | 锁定 Include | `PROG/I` | `POST /sap/bc/adt/programs/includes/{name}?_action=LOCK&accessMode=MODIFY` |
 | Include 对象 URI | `PROG/I` | `/sap/bc/adt/programs/includes/{name}` |
 | 可执行程序对象 URI | `PROG/P` | `/sap/bc/adt/programs/programs/{name}` |
+
+---
+
+## ZREPORT_EXEC_VERIFY 部署说明
+
+`ZREPORT_EXEC_VERIFY` 是阶段 5.5 冒烟测试的**核心前置依赖**——它通过 `SUBMIT … WITH SELECTION-TABLE` 执行目标报表并用 `cl_salv_bs_runtime_info` 捕获 ALV 输出为 JSON。**没有它，`verify_report.js` 无法工作。**
+
+### 代码位置
+
+FM 完整源码：`docs/ZREPORT_EXEC_VERIFY.txt`
+
+### 部署方式
+
+**方式 A — 用户自行部署（推荐）**：用户通过 SE80/SE37 在数据系统上手动创建函数组，将 `docs/ZREPORT_EXEC_VERIFY.txt` 内容粘贴到 FM 源码中，激活。
+
+**方式 B — 代理辅助部署**：用户说"帮我部署 ZREPORT_EXEC_VERIFY"，代理按以下流程操作：
+
+1. **询问部署目标**：
+   - **本地包 `$TMP`**：无需传输请求，适合开发测试
+   - **具体开发包**：需要用户提供包名和传输请求号
+2. **创建函数组**（如 `ZFG_REPORT_VERIFY`）：
+   - 使用 ADT REST `POST /sap/bc/adt/functions/groups`（`FUGR/F`）
+   - 或用 MCP `createObject` 指定 `objtype: "FUGR/F"`
+3. **在函数组内创建 FM** `ZREPORT_EXEC_VERIFY`：
+   - 使用 ADT REST `POST /sap/bc/adt/functions/groups/<fugr>/fmodules`（`FUGR/FF`）
+4. **上传 FM 源码**（`docs/ZREPORT_EXEC_VERIFY.txt` 的内容）：
+   - `PUT /sap/bc/adt/functions/groups/<fugr>/fmodules/<fm>/source/main?lockHandle={handle}`
+5. **激活函数组**
+
+### 代理行为
+
+- 阶段 5.5 执行 `verify_report.js` 前，代理**必须先验证** `ZREPORT_EXEC_VERIFY` 在数据系统上存在（通过 `searchObject` 查 `FUGR/FF` 类型，或直接跑 `verify_report.js` 看是否报 FM 不存在）。
+- 若 FM 不存在 → 提示用户："要在数据系统上部署 ZREPORT_EXEC_VERIFY 才能执行报表校验。代码在 `docs/ZREPORT_EXEC_VERIFY.txt`。需要我帮你部署吗？"
+- 若用户同意 → 代理按方式 B 部署到数据系统（**不是**开发系统）。
+- **禁止**在FM未部署的情况下声称冒烟测试通过。
+
+---
+
+## 附录：FUGR / Function Module 创建与部署（ADT REST 完整支持）
+
+### 能力确认
+
+ADT REST API **已支持**函数组（FUGR）和 Function Module（FM）的创建与部署。FM 的入参/出参（IMPORTING/EXPORTING/CHANGING/TABLES/EXCEPTIONS）**定义在 ABAP 源码中**——上传包含完整 `FUNCTION ... ENDFUNCTION` 块的源码后，SAP 自动解析接口参数，**不需要**单独的"参数创建"API。
+
+### 支持的 ADT 类型码
+
+| 类型码 | 含义 | ADT 创建端点 | 父对象 |
+|--------|------|-------------|--------|
+| `FUGR/F` | 函数组（Function Group） | `POST /sap/bc/adt/functions/groups` | `DEVC/K`（包） |
+| `FUGR/FF` | Function Module | `POST /sap/bc/adt/functions/groups/<fugr>/fmodules` | `FUGR/F`（函数组） |
+| `FUGR/I` | 函数组 Include | `POST /sap/bc/adt/functions/groups/<fugr>/includes` | `FUGR/F`（函数组） |
+
+### FM 源码格式（含接口参数）— 已验证
+
+FM 参数**不能在 `*"*"` 注释块中定义**（ADT REST 拒绝："Parameter comment blocks are not allowed"）。正确方式是 **ABAP 原生声明语法**：参数直接写在 FUNCTION 声明中，用 `.` 结束签名块：
+
+```abap
+FUNCTION zfm_example
+  IMPORTING
+    VALUE(iv_bukrs) TYPE bukrs
+    VALUE(iv_gjahr) TYPE gjahr
+  EXPORTING
+    VALUE(ev_amount) TYPE dmbtr
+    VALUE(ev_message) TYPE string
+  TABLES
+    it_data STRUCTURE some_structure OPTIONAL
+  EXCEPTIONS
+    no_data_found
+    invalid_input.
+  ... implementation ...
+ENDFUNCTION.
+```
+
+**关键约束**：
+- `REMOTE`（RFC 启用）**不是源码关键字**——通过 PUT FM resource XML 的 `fmodule:processingType="rfc"` 设置
+- `*"*"` 注释块格式严格禁止，SE37 自动生成的接口注释在 ADT REST 上传中不可用
+- 参数名和类型直接使用 ABAP 标准语法（`TYPE` / `LIKE` / `STRUCTURE`）
+
+### 部署流程（通过 SADT_REST_RFC_ENDPOINT）— 已验证
+
+```
+1. 创建函数组 → POST /sap/bc/adt/functions/groups
+2. 在函数组内创建 FM → POST /sap/bc/adt/functions/groups/<fugr>/fmodules
+3. Lock FM → POST .../fmodules/<fm>?_action=LOCK&accessMode=MODIFY
+4. 设置 FM 元数据（processingType 等）→ PUT .../fmodules/<fm>?lockHandle={handle}
+   ─ 若为 RFC 远程调用，设置 fmodule:processingType="rfc"
+5. 上传 FM 源码（含内联参数声明）→ PUT .../fmodules/<fm>/source/main?lockHandle={handle}
+6. 激活函数组 → POST /sap/bc/adt/activation?method=activate&preauditRequested=true
+```
+
+步骤 4 和 5 在同一锁内完成，锁释放后执行激活。
+
+### 代理行为
+
+- 阶段 1.5 确定对象类型时，若目标为 FUGR/FM，同样执行 `searchObject` 存在性检查
+- 阶段 4.8 生成 FM 源码时，**必须先确定入参/出参/表参数/异常签名**（从 FS 中提取或向用户确认），然后写入完整的 `FUNCTION ... ENDFUNCTION` 块
+- FM 参数名遵循 SAP 命名约定：`IV_`（导入值）、`EV_`（导出值）、`IT_`（导入表）、`ET_`（导出表）、`CT_`（更改表）
+- 部署时走 `deploy_rfc.js` 或新增的 `deploy_fm.js` 脚本
