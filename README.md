@@ -69,6 +69,8 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 | `verify_report.js` | 冒烟测试（执行报表 + 多参数比对） | 每个程序 |
 | `test_rfc.js` | RFC 环境诊断（DLL + node-rfc + 连接） | 首次/故障 |
 | `release_locks.js` | 应急释放 SAP 锁 | 按需 |
+| `fetch_table.js` | DDIC 端点统一取数（完整 SELECT，WHERE 可靠） | 每报表 |
+| `data_sampler.js` | fetch_table.js 兼容包装 | 每报表 |
 | `extract-docx.js` | DOCX 功能说明书文本提取 | 按需 |
 | `modules/` | 共享模块（env/sap-connection/adt-request/lock/create/upload/activate 等） | — |
 
@@ -80,13 +82,14 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 | S1 | `spec/functional-spec-ai.md` | — |
 | S1.5 | 对象名确认 | `rfc_client.js --search` |
 | S2 | `metadata/tables/<T>.json` | `rfc_fetch_ddic.js --env=.env.data <T>` |
+| S2.1 | `spec/fs-ddic-verification.md` | 逐字段存在性 + 类型 + 语义验证 |
 | S2.5 | `metadata/performance-estimate.md` | `rfc_client.js --sql COUNT --table <T>` |
-| S3 | `docs/tech-design.md`（含字段契约） | — |
+| S3 | `docs/tech-design.md`（含字段契约 + 选择屏幕字段角色分析） | — |
 | S3.5 | `docs/fs-coverage.md` | — |
 | S3.6 | `docs/deployment-config.md` | — |
 | S4 | `abap/sources/*.abap` | — |
 | S5 | 激活 | `deploy_rfc.js <程序名>` |
-| S5.5 | `docs/smoke-test.md` | `verify_report.js` |
+| S5.5 | `output/<程序>/smoke-test.md` | `fetch_table.js` + `verify_report.js` |
 
 ### 全阶段 SAP 命令速查
 
@@ -109,6 +112,9 @@ node scripts/rfc_client.js --env=.env.data --sql "SELECT COUNT(*) AS CNT FROM <T
 
 # S5 — 部署
 node scripts/deploy_rfc.js <程序名>
+
+# S5.5 — 取数（DDIC 端点，完整 SELECT）
+node scripts/fetch_table.js --table=FAGLFLEXT --where="RYEAR = '2026'" --fields=RYEAR,RACCT --rows=50
 
 # S5.5 — 冒烟测试
 node scripts/verify_report.js <程序名> P_BUKRS=6030 P_GJAHR=2025 "S_RPMAX=001-004"
@@ -154,15 +160,24 @@ output/<object>/
 
 ## 已知限制
 
-- **文本元素 / GUI Status**：RFC ADT 通道不支持自动写入，部署后需 SE80 手动维护。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏
+- **文本元素 / GUI Status**：RFC ADT 通道不支持 SE32/SE41。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏。选择屏幕文本通过运行时设置：`%_xxx_%_app_%-text` 直接赋值（优先），或 `SELECTION_TEXTS_MODIFY` FM（备选）
 - **FM 参数格式**：必须用 ABAP 原生声明，`*"*"` 注释块被 RFC ADT 拒绝
 - **`freestyle` SQL 端点**：部分 SAP 版本返回 400，用 `--table <T>` 走 `ddic` 端点兜底
+
+## GitHub 推送准则
+
+1. **敏感信息零泄露**：`.env*` 全部 gitignore，含 SAP 凭据/服务器地址；仅提供 `.env.example` 空模板
+2. **`.claude/` 选择性上传**：`skills/` 公开分享；`settings.local.json` 仅含通用权限（Bash/Git/npm）
+3. **产物不上传**：`spec/`（除 `.gitkeep`）、`output/`（除 `.gitkeep`）、`_dist/`、`*.zip`、`*.log`、`.locks/` 全部 gitignore
+4. **Commit 规范**：Conventional Commits（feat/fix/chore/docs/refactor）+ 中文描述
+5. **推送前检查**：`git status` 确认无 `.env*`、无产物混入、无硬编码凭据
 
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **V3.0** | 2026-06-24 | RFC ADT架构：不再使用REST ADT
+| **V3.1** | 2026-06-24 | S2.1 FS→DDIC 验证、选择屏幕文本运行时、冒烟测试标准化、fetch_table.js、GitHub 推送准则 |
+| V3.0 | 2026-06-24 | RFC ADT 直连架构：去除 MCP/代理中间层，统一走 node-rfc → SADT_REST_RFC_ENDPOINT |
 | V0.3 | 2026-06-10 | FM 创建流程（IMPORTING/EXPORTING/TABLES + RFC）；冒烟测试真实数据验证；配置去硬编码 |
 | V0.2 | 2026-06-09 | 冒烟测试方法论修正（先查源表→手工预期→跑程序→比对）；去敏感信息 |
 | V0.1 | 2026-04-27 | 初始版本：REPORT 全流程、双系统架构、RFC 代理模式 |
