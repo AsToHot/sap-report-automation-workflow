@@ -88,25 +88,25 @@ async function deploy() {
 
     // 3) Create and upload includes with lock
     const includes = [
-      [`${progName}T01`, t01Src],
-      [`${progName}SEL`, selSrc],
-      ...(fSrc ? [[fIncName, fSrc]] : []),
-      [`${progName}O01`, o01Src],
-    ].filter(([, src]) => src);
+        [`${progName}T01`, t01Src],
+        [`${progName}SEL`, selSrc],
+        ...(fSrc ? [[fIncName, fSrc]] : []),
+        [`${progName}O01`, o01Src],
+      ].filter(([, src]) => src);
 
-    for (const [incName, src] of includes) {
-      await createInclude(client, incName, {
-        description: `Include ${incName}`,
-        responsible,
-        packageName: deployConfig.packageName,
-        transportRequest: deployConfig.transportRequest,
-      });
-      const incUri = `/sap/bc/adt/programs/includes/${incName.toLowerCase()}`;
-      await withLock(client, incUri, async (lockHandle) => {
-        await uploadIncludeSource(client, incName, src, lockHandle, deployConfig.transportRequest);
-      });
-      console.log(`[OK] Include ${incName} uploaded & unlocked`);
-    }
+      for (const [incName, src] of includes) {
+        await createInclude(client, incName, {
+          description: `Include ${incName}`,
+          responsible,
+          packageName: deployConfig.packageName,
+          transportRequest: deployConfig.transportRequest,
+        });
+        const incUri = `/sap/bc/adt/programs/includes/${incName.toLowerCase()}`;
+        await withLock(client, incUri, async (lockHandle) => {
+          await uploadIncludeSource(client, incName, src, lockHandle, deployConfig.transportRequest);
+        });
+        console.log(`[OK] Include ${incName} uploaded & unlocked`);
+      }
 
     // 4) Syntax check all objects before activation
     const allObjects = [
@@ -158,17 +158,17 @@ async function deploy() {
       console.log("[INFO] Syntax check unavailable; activation will validate syntax");
     }
 
-    // 5) Activate
-    const actObjs = [progName, `${progName}T01`, `${progName}SEL`];
-    if (fSrc) actObjs.push(fIncName);
-    if (o01Src) actObjs.push(`${progName}O01`);
+    // 5) Activate main + all includes in one request (preauditRequested=false)
+    const actObjs = [{ name: progName, type: "P" }];
+    if (t01Src) actObjs.push({ name: `${progName}T01`, type: "I" });
+    if (selSrc) actObjs.push({ name: `${progName}SEL`, type: "I" });
+    if (fSrc) actObjs.push({ name: fIncName, type: "I" });
+    if (o01Src) actObjs.push({ name: `${progName}O01`, type: "I" });
+
+    console.log(`[ACT] Activating ${actObjs.length} object(s)...`);
     const actResult = await activateObjects(client, actObjs);
     if (actResult.hasErrors) {
       console.error("[ERR] Activation failed:");
-      if (actResult.errors.length === 0) {
-        console.error("      (parser found error fingerprint but could not extract details)");
-        console.error(`      Raw XML (first 500 chars): ${(actResult.raw || "").substring(0, 500)}`);
-      }
       for (const err of actResult.errors) {
         console.error(`      ${err.name}: ${err.message}`);
       }

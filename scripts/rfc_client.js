@@ -103,10 +103,9 @@ function buildRequest(opts) {
   }
   if (opts.sql) {
     if (opts.table) {
-      // ddic 端点：body 是 WHERE 子句，不是完整 SQL
+      // ddic 端点：body 是完整 SELECT 语句
       const qs = [`rowNumber=${opts.rowNumber}`, `ddicEntityName=${opts.table}`];
-      const where = opts.sql.toUpperCase().startsWith('SELECT') ? '' : opts.sql;
-      return { method: 'POST', uri: `/sap/bc/adt/datapreview/ddic?${qs.join('&')}`, headers: { Accept: 'application/*', 'Content-Type': 'text/plain; charset=utf-8' }, body: where };
+      return { method: 'POST', uri: `/sap/bc/adt/datapreview/ddic?${qs.join('&')}`, headers: { Accept: 'application/*', 'Content-Type': 'text/plain; charset=utf-8' }, body: opts.sql };
     }
     const qs = [`rowNumber=${opts.rowNumber}`];
     return { method: 'POST', uri: `/sap/bc/adt/datapreview/freestyle?${qs.join('&')}`, headers: { Accept: 'application/*', 'Content-Type': 'text/plain; charset=utf-8' }, body: opts.sql };

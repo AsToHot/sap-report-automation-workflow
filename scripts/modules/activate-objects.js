@@ -2,12 +2,14 @@ const { adtRequest } = require("./adt-request");
 
 async function activateObjects(client, objectNames) {
   const refs = objectNames.map((n) => {
-    const lower = n.toLowerCase();
-    const uri =
-      lower.includes("f01") || lower.includes("sel") || lower.includes("t01")
-        ? `/sap/bc/adt/programs/includes/${lower}`
-        : `/sap/bc/adt/programs/programs/${lower}`;
-    return `<adtcore:objectReference adtcore:uri="${uri}" adtcore:name="${n}"/>`;
+    // {name, type} — type: 'P'=PROG/P (program), 'I'=PROG/I (include)
+    const name = typeof n === "string" ? n : n.name;
+    const objType = typeof n === "string" ? "P" : (n.type || "P");
+    const lower = name.toLowerCase();
+    const uri = objType === "I"
+      ? `/sap/bc/adt/programs/includes/${lower}`
+      : `/sap/bc/adt/programs/programs/${lower}`;
+    return `<adtcore:objectReference adtcore:uri="${uri}" adtcore:name="${name}"/>`;
   }).join("\n  ");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -15,7 +17,7 @@ async function activateObjects(client, objectNames) {
   ${refs}
 </adtcore:objectReferences>`;
 
-  const resp = await adtRequest(client, "POST", "/sap/bc/adt/activation?method=activate&preauditRequested=true", {
+  const resp = await adtRequest(client, "POST", "/sap/bc/adt/activation?method=activate&preauditRequested=false", {
     data: xml,
     headers: {
       "Content-Type": "application/vnd.sap.adt.activation+xml",
@@ -88,7 +90,6 @@ function parseActivationResult(xml) {
                   || msgBody.match(/<[a-zA-Z:]*title[^>]*>([^<]*)<\/[a-zA-Z:]*title>/i)
                   || msgBody.match(/<[a-zA-Z:]*message[^>]*>([^<]*)<\/[a-zA-Z:]*message>/i);
     const message = txtMatch ? txtMatch[1] : "Activation error (severity=error)";
-    // dedupe
     if (!errors.some(e => e.name === name && e.message === message)) {
       errors.push({ name, message });
     }
@@ -105,7 +106,7 @@ function parseActivationResult(xml) {
     }
   }
 
-  // Broad error fingerprint detection (catches formats we haven't seen)
+  // Broad error fingerprint detection
   const hasErrorFingerprint =
     /\btype\s*=\s*"[EA]"/.test(xml)
     || /\bseverity\s*=\s*"error"/i.test(xml)
