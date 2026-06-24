@@ -2,7 +2,7 @@
 name: sap-report-automation-workflow
 version: 2.0
 description: |
-  End-to-end SAP ABAP 开发对象自动化——通过 node-rfc 直连 SADT_REST_RFC_ENDPOINT 调用 SAP ADT REST API。支持 REPORT/CLAS/FUGR/INTF/Include 全部对象类型。FS 规范化→DDIC 元数据→技术文档→按模板写 ABAP→激活循环。所有 SAP 操作统一走 `scripts/rfc_client.js`（查询）和 `scripts/deploy_rfc.js`（部署）。语法速查 [abap-syntax-quickref.md](abap-syntax-quickref.md)，卡点速查 [troubleshooting.md](troubleshooting.md)。
+  End-to-end SAP ABAP 开发对象自动化——通过 node-rfc 直连 SADT_REST_RFC_ENDPOINT 调用 RFC ADT API。支持 REPORT/CLAS/FUGR/INTF/Include 全部对象类型。FS 规范化→DDIC 元数据→技术文档→按模板写 ABAP→激活循环。所有 SAP 操作统一走 `scripts/rfc_client.js`（查询）和 `scripts/deploy_rfc.js`（部署）。语法速查 [abap-syntax-quickref.md](abap-syntax-quickref.md)，卡点速查 [troubleshooting.md](troubleshooting.md)。
 ---
 
 # SAP ABAP 开发对象自动化工作流（FS → 元数据 → 设计文档 → 代码 → 激活）
@@ -394,14 +394,14 @@ FS 变更时禁止默认全量重跑。按变更类型选择恢复起点：
 - **ABAP 语法速查**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 阶段 4 必备
 - **卡点速查**：[troubleshooting.md](troubleshooting.md) — 受阻时先查
 - **SAP 操作参考**：[sap-operations-reference.md](sap-operations-reference.md) — 全部 SAP 命令的入参/出参/已测试状态
-- **ADT REST 端点**：[mcp-contract.md](mcp-contract.md) — 各端点 URI + rfc_client.js 使用手册
+- **RFC ADT 端点**：[mcp-contract.md](mcp-contract.md) — 各端点 URI + rfc_client.js 使用手册
 - **脚本库参考**：[reference.md](reference.md)
 - **RFC-ADT 桥接**：[docs/rfc-adt-bridge.md](../../../../docs/rfc-adt-bridge.md) — SADT_REST_RFC_ENDPOINT 详解、INCLUDE/FUGR/FM 部署
 
 完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
 
 ---
-## 附录：关键 ADT REST 端点与故障排查
+## 附录：关键 RFC ADT 端点与故障排查
 
 ### 常用端点
 

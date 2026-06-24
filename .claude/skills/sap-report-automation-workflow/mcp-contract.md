@@ -1,4 +1,4 @@
-# ADT REST 端点与 rfc_client.js 使用手册
+# RFC ADT 端点与 rfc_client.js 使用手册
 
 ## rfc_client.js 用法
 
@@ -12,7 +12,7 @@ node scripts/rfc_client.js [--env=<file>] <模式> [参数]
 --sql <query>           执行 SQL（--table <T> 走 ddic 端点，无则走 freestyle）
 --source <uri>          拉取对象源码
 --inactive              列出未激活对象
-<METHOD> <URI>          通用 ADT REST 请求（--body 传请求体）
+<METHOD> <URI>          通用 RFC ADT 请求（--body 传请求体）
 ```
 
 ### 常用示例
@@ -71,7 +71,7 @@ echo "SELECT * FROM TADIR" | node scripts/rfc_client.js --env=.env.data \
 
 ---
 
-## 常用 ADT REST 端点
+## 常用 RFC ADT 端点
 
 ### 查询类
 

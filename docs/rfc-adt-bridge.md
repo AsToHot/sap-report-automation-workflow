@@ -2,7 +2,7 @@
 
 ## 概述
 
-`SADT_REST_RFC_ENDPOINT` 是 SAP 标准函数模块，负责将 ADT REST 请求通过 RFC 通道转发到 SAP 内部的 ADT REST 服务。这是 Eclipse ADT（通过 JCo）使用的同一机制。
+`SADT_REST_RFC_ENDPOINT` 是 SAP 标准函数模块，负责将 ADT 请求通过 RFC 通道转发到 SAP 内部的 ADT 服务。这是 Eclipse ADT（通过 JCo）使用的同一机制。
 
 ## 调用方式
 
@@ -127,10 +127,10 @@ Body:
 
 | 方式 | 调用目标 | 适用场景 |
 |------|---------|---------|
-| SADT_REST_RFC_ENDPOINT | ADT REST API | 代码创建、修改、激活等开发操作 |
+| SADT_REST_RFC_ENDPOINT | RFC ADT API | 代码创建、修改、激活等开发操作 |
 | 直接 FM（如 DDIF_FIELDINFO_GET） | SAP 标准函数模块 | 数据字典查询、表数据读取等 |
 
-**注意**：`INSERT_REPORT` 不是 SAP 标准函数模块，在部分系统上不存在。所有代码部署应通过 ADT REST API（即 `SADT_REST_RFC_ENDPOINT`）完成。
+**注意**：`INSERT_REPORT` 不是 SAP 标准函数模块，在部分系统上不存在。所有代码部署应通过 RFC ADT API（即 `SADT_REST_RFC_ENDPOINT`）完成。
 
 ## 参考代码
 
@@ -147,7 +147,7 @@ Body:
 | 激活失败 | 语法错误或依赖未激活 | 先修正语法；检查 INCLUDE 是否已上传并解锁 |
 | 激活 HTTP 200 但未激活（假成功） | 解析器漏掉 `<msg type="E">` | 匹配三种格式：`<msg type="E\|A">`、`<atom:entry>`(category=error)、`<entry>` |
 | 语法检查 405 | 系统不支持该端点 | 标记 unavailable，激活兜底验证语法 |
-| 文本元素/GUI Status 写 404 | ADT REST 不支持写入 | 已知限制；部署后 SE80 手动维护 |
+| 文本元素/GUI Status 写 404 | RFC ADT 通道不支持写入 | 已知限制；部署后 SE80 手动维护 |
 | `STATUS_LINE` 无 `STATUS_CODE` | 部分系统字段名不同 | 兼容：`STATUS_CODE` 优先，fallback `CODE` |
 
 ## 脚本库参考
@@ -221,7 +221,7 @@ scripts/
 
 ### 问题描述
 
-ADT REST API 中 `PROG/I` 类型的 URI 与 `PROG/P` 不同，直接混用会创建为错误的类型。
+RFC ADT API 中 `PROG/I` 类型的 URI 与 `PROG/P` 不同，直接混用会创建为错误的类型。
 
 ### 根因分析
 
@@ -233,13 +233,13 @@ ADT REST API 中 `PROG/I` 类型的 URI 与 `PROG/P` 不同，直接混用会创
 
 ### INCLUDE 正确部署方式
 
-使用 `scripts/deploy_rfc.js` 通过原生 ADT REST API 逐对象部署：
+使用 `scripts/deploy_rfc.js` 通过原生 RFC ADT API 逐对象部署：
 1. 阶段 4 生成分层源码（主程序 + T01/SEL/F01）
 2. 阶段 5 执行脚本：`node scripts/deploy_rfc.js <program>`
 3. 脚本自动创建 `PROG/P` 主程序和 `PROG/I` Include（`program:programType="I"`）
 4. 激活主程序时，系统自动处理其引用的 Include
 
-### 相关 ADT REST 端点（供未来实现参考）
+### 相关 RFC ADT 端点（供未来实现参考）
 
 | 操作 | 对象类型 | ADT URI |
 |------|---------|---------|
@@ -278,11 +278,11 @@ FM 完整源码：`docs/ZREPORT_EXEC_VERIFY.txt`
 
 ---
 
-## FUGR / Function Module 创建与部署（ADT REST 完整支持）
+## FUGR / Function Module 创建与部署（RFC ADT 完整支持）
 
 ### 能力确认
 
-ADT REST API **已支持**函数组和 FM 的创建与部署。FM 入参/出参定义在 ABAP 源码中——上传包含完整 `FUNCTION ... ENDFUNCTION` 块后，SAP 自动解析接口参数，不需要单独的"参数创建"API。
+RFC ADT API **已支持**函数组和 FM 的创建与部署。FM 入参/出参定义在 ABAP 源码中——上传包含完整 `FUNCTION ... ENDFUNCTION` 块后，SAP 自动解析接口参数，不需要单独的"参数创建"API。
 
 ### 支持的 ADT 类型码
 
@@ -294,7 +294,7 @@ ADT REST API **已支持**函数组和 FM 的创建与部署。FM 入参/出参�
 
 ### FM 源码格式（含接口参数）— 已验证
 
-FM 参数**不能在 `*"*"` 注释块中定义**（ADT REST 拒绝）。正确方式是 ABAP 原生声明语法：
+FM 参数**不能在 `*"*"` 注释块中定义**（RFC ADT 拒绝）。正确方式是 ABAP 原生声明语法：
 
 ```abap
 FUNCTION zfm_example

@@ -56,7 +56,7 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 | `abap-syntax-quickref.md` | ABAP 语法速查（ECC→S4HANA→Cloud） |
 | `troubleshooting.md` | 卡点速查（DDIC/部署/代码/连接） |
 | `reference.md` | ABAP 参考源 + 脚本库 |
-| `mcp-contract.md` | ADT REST 端点 + rfc_client.js 手册 |
+| `mcp-contract.md` | RFC ADT 端点 + rfc_client.js 手册 |
 
 ### 核心脚本（`scripts/`）
 
@@ -116,7 +116,7 @@ node scripts/verify_report.js <程序名> P_BUKRS=6030 P_GJAHR=2025 "S_RPMAX=001
 
 ## FUGR / Function Module 部署
 
-ADT REST + `SADT_REST_RFC_ENDPOINT` 完整支持函数组和 FM。
+RFC ADT（通过 SADT_REST_RFC_ENDPOINT） 完整支持函数组和 FM。
 
 ```abap
 " FM 源码格式（ABAP 原生声明，禁止 *"*" 注释块）
@@ -154,8 +154,8 @@ output/<object>/
 
 ## 已知限制
 
-- **文本元素 / GUI Status**：ADT REST 不支持自动写入，部署后需 SE80 手动维护。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏
-- **FM 参数格式**：必须用 ABAP 原生声明，`*"*"` 注释块被 ADT REST 拒绝
+- **文本元素 / GUI Status**：RFC ADT 通道不支持自动写入，部署后需 SE80 手动维护。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏
+- **FM 参数格式**：必须用 ABAP 原生声明，`*"*"` 注释块被 RFC ADT 拒绝
 - **`freestyle` SQL 端点**：部分 SAP 版本返回 400，用 `--table <T>` 走 `ddic` 端点兜底
 
 ## 版本历史

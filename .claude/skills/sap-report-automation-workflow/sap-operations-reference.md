@@ -366,7 +366,7 @@ node scripts/release_locks.js
 
 ---
 
-## 11. 通用 ADT REST 请求 — `rfc_client.js <METHOD> <URI>`
+## 11. 通用 RFC ADT 请求 — `rfc_client.js <METHOD> <URI>`
 
 ```bash
 # GET
@@ -404,7 +404,7 @@ node scripts/rfc_client.js POST "/sap/bc/adt/datapreview/ddic?rowNumber=5&ddicEn
 
 ---
 
-## 常见 ADT REST 端点
+## 常见 RFC ADT 端点
 
 | 操作 | 方法 | URI |
 |------|------|-----|
