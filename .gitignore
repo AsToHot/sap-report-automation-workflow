@@ -7,7 +7,7 @@ _dist/
 .env.prd
 .env.300
 .locks/
-.claude/
+
 spec/*
 !spec/.gitkeep
 output/*
