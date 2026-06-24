@@ -303,7 +303,7 @@ ENDCLASS.
 " 注册：SET HANDLER lcl_events=>on_double_click FOR go_alv->get_event( ).
 ```
 
-> **GUI Status**：CL_SALV_TABLE **自带工具栏**，无需自定义 GUI 状态。ADT 无法创建 GUI 状态（SE41）/文本元素（SE32），不要尝试。
+> **GUI Status**：CL_SALV_TABLE **自带工具栏**，无需自定义 GUI 状态，不要尝试 SE41。选择屏幕文本用 `%_xxx_%_app_%-text` 或 `SELECTION_TEXTS_MODIFY` 运行时设置，详见 SKILL.md §选择屏幕文本元素处理。
 
 ---
 
