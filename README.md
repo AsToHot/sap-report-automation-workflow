@@ -47,7 +47,7 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 
 ## 包含内容
 
-### Skill 文档（`skills/sap-report-automation-workflow/`）
+### Skill 文档（`.claude/skills/sap-report-automation-workflow/`）
 
 | 文件 | 用途 |
 |------|------|
