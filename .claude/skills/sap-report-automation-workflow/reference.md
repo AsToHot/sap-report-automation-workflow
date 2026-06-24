@@ -13,13 +13,13 @@
 
 ## 与 Eclipse ADT 的关系
 
-本工作流通过 `node-rfc → SADT_REST_RFC_ENDPOINT` 直连 SAP ADT REST API（`/sap/bc/adt/`），与 Eclipse ADT 使用**同一后端契约**。能在 Eclipse ADT 中连上并编辑的开发对象，在 RFC 连通且权限一致的前提下应能同样操作。锁、传输、并发编辑等行为与 Eclipse ADT 一致。
+本工作流通过 `node-rfc → SADT_REST_RFC_ENDPOINT` 直连 SAP ADT API（RFC 通道）（`/sap/bc/adt/`），与 Eclipse ADT 使用**同一后端契约**。能在 Eclipse ADT 中连上并编辑的开发对象，在 RFC 连通且权限一致的前提下应能同样操作。锁、传输、并发编辑等行为与 Eclipse ADT 一致。
 
 ## 成熟方案（可与本工作流组合）
 
 | 方案 | 用途 |
 |------|------|
-| **ADT REST** `/sap/bc/adt/` | Eclipse ADT 同款 API；`rfc_client.js` 已封装常用操作 |
+| **RFC ADT** `/sap/bc/adt/` | Eclipse ADT 同款 API；`rfc_client.js` 已封装常用操作 |
 | **abapify/adt-cli**（TypeScript） | 契约化 HTTP 客户端与 CLI，适合流水线 |
 | **abapGit + CI** | `ZABAPGIT_CI` 或 REST 跑语法/对象检查 |
 | **Jenkins / GitHub Actions** | 社区常见 CI/CD 模式 |
@@ -63,7 +63,7 @@ node scripts/rfc_client.js --source "/sap/bc/adt/ddic/tables/bkpf/source/main"
 - 语法检查端点返回 405 → 标记 `unavailable`，激活阶段兜底验证
 - 每次失败追加到 `output/<program>/docs/smoke-test.md`
 
-## ADT REST 常用端点
+## RFC ADT 常用端点
 
 | 操作 | 方法 | URI |
 |------|------|-----|
