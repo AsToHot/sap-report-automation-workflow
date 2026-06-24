@@ -1,12 +1,14 @@
 _dist/
 *.zip
 *.log
-.claude/settings.json
-.claude/settings.local.json
 .env
 .env.data
 .env.test
 .env.prd
 .env.300
 .locks/
-spec/*.docx
+.claude/
+spec/*
+!spec/.gitkeep
+output/*
+!output/.gitkeep
