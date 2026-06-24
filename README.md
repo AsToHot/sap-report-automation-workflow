@@ -25,12 +25,12 @@ npm install          # 安装 node-rfc
 
 ### 2. 配置 SAP 连接
 
-创建 `.env`（开发系统，SAP_CLIENT=200）和 `.env.data`（数据系统，SAP_CLIENT=300）：
+创建 `.env`（开发系统，SAP_CLIENT=开发客户端）和 `.env.data`（数据系统，SAP_CLIENT=开发机单元测试客户端）：
 
 ```bash
 SAP_URL=http://<host>:8000
-SAP_CLIENT=200
-SAP_SYSNR=00              # 必须显式设置，不可依赖端口推导
+SAP_CLIENT=200(或其他)
+SAP_SYSNR=00              # 实例编号
 SAP_USERNAME=<username>
 SAP_PASSWORD=<password>
 SAP_ROUTER=/H/<router>    # 可选，内网穿透
@@ -47,7 +47,7 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 
 ## 包含内容
 
-### Skill 文档（`.claude/skills/sap-report-automation-workflow/`）
+### Skill 文档（`skills/sap-report-automation-workflow/`）
 
 | 文件 | 用途 |
 |------|------|
@@ -62,7 +62,7 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 
 | 脚本 | 用途 | 频率 |
 |------|------|------|
-| `rfc_client.js` | 统一 RFC 客户端（discovery/search/SQL/source） | 每次会话 |
+| `rfc_client.js` | 统一 RFC ADT 客户端（discovery/search/SQL/source） | 每次会话 |
 | `rfc_fetch_ddic.js` | 单表 DDIC 元数据一键拉取 → JSON | 每张表 |
 | `rfc_dual_check.js` | 双系统连通检测 | 每次会话 |
 | `deploy_rfc.js` | 部署编排（创建→Lock→上传→语法检查→激活） | 每个程序 |
@@ -162,7 +162,7 @@ output/<object>/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **V3.0** | 2026-06-24 | RFC 直连架构：去除 MCP/代理中间层；`rfc_client.js` 统一入口；`rfc_fetch_ddic.js` 一键 DDIC 拉取；`rfc_dual_check.js` 双系统检测；`sap-operations-reference.md` 全操作入参出参实测手册；SAP_SYSNR 显式设置；SQL 统一 ABAP EQ 语法 |
+| **V3.0** | 2026-06-24 | RFC ADT架构：不再使用REST ADT
 | V0.3 | 2026-06-10 | FM 创建流程（IMPORTING/EXPORTING/TABLES + RFC）；冒烟测试真实数据验证；配置去硬编码 |
 | V0.2 | 2026-06-09 | 冒烟测试方法论修正（先查源表→手工预期→跑程序→比对）；去敏感信息 |
 | V0.1 | 2026-04-27 | 初始版本：REPORT 全流程、双系统架构、RFC 代理模式 |
