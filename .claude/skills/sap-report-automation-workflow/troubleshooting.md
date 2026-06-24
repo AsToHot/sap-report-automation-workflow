@@ -10,20 +10,19 @@
 
 | 症状 | 第一反应 | 禁止行为 |
 |------|---------|---------|
-| `runQuery` 查 FAGLFLEXT/BSEG/BKPF 返回 0 行 | **先用 `abap-adt-data`(300) 查**。200 上这些表本来就是空的 | **禁止**怀疑代码逻辑有问题、反复重写 ABAP |
-| 程序执行后 ALV 金额全 0 | **先确认当前连接的是 200 还是 300**。200 无数据，全 0 正常 | **禁止**改 `.env` 客户端号到 300 来"验证" |
-| 需要验证程序正确性 | 在 `abap-adt-data`(300) 上 `runQuery` 确认源表有数据 | **禁止**在 200 上因为没有数据就推翻已验证通过的程序 |
+| SQL 查 FAGLFLEXT/BSEG/BKPF 返回 0 行 | **先用 `--env=.env.data` 查数据系统(300)**。200 上这些表本来就是空的 | **禁止**怀疑代码逻辑有问题、反复重写 ABAP |
+| 程序执行后 ALV 金额全 0 | **先确认数据采自数据系统(300)**。200 无数据，全 0 正常 | **禁止**改 `.env` 客户端号到 300 来"验证" |
+| 需要验证程序正确性 | 在数据系统(300)上 `--env=.env.data` 查源表确认有数据 | **禁止**在 200 上因为没有数据就推翻已验证通过的程序 |
 
-### MCP 工具→客户端 速查
+### 脚本→系统 速查
 
-| MCP 工具 | 用哪个 MCP | 原因 |
-|----------|-----------|------|
-| `runQuery`、`tableContents` | `abap-adt-data`（300） | 查业务数据 |
-| `createObject`、`setObjectSource`、`lock`、`activate*` | `abap-adt`（200） | 开发操作 |
-| `getObjectSource`（查程序源码） | `abap-adt`（200） | 开发对象在 200 |
-| `getObjectSource`（查表 DDIC） | 均可 | DDIC 定义在 200/300 一致 |
-| `searchObject` | `abap-adt`（200） | 查开发对象 |
-| `deploy_rfc.js` | 从 `.env` 读连接 → 必须 SAP_CLIENT=200 | 部署到开发机 |
+| 操作 | 配置文件 | 说明 |
+|------|---------|------|
+| `rfc_client.js --sql ... --table <T>` 查业务数据 | `--env=.env.data`（数据系统 300） | 查业务数据 |
+| `rfc_client.js --search` 查 ABAP 对象 | 默认 `.env`（开发系统 200） | 查开发对象 |
+| `rfc_fetch_ddic.js <T>` 拉元数据 | `--env=.env.data`（数据系统 300） | DDIC 定义 200/300 一致，有数据处更快 |
+| `deploy_rfc.js <prog>` 部署 | 默认 `.env`（开发系统 200） | 部署到开发机 |
+| `verify_report.js` 冒烟测试 | 默认 `.env.data`（数据系统 300） | 执行业务数据校验 |
 
 → 完整规则见 [SKILL.md §0.5.5](SKILL.md)
 
@@ -34,7 +33,7 @@
 **唯一可靠路径**：`runQuery → DD03L`。`getObjectSource` 对 DDIC 表永远返回 404。
 
 → 完整规则见 SKILL.md 阶段 2（`DD03L 单表串行 + COUNT 校验`）
-→ 连接错误恢复见 SKILL.md §0.4.1
+→ 连接错误恢复：0.4.1 业务工具运行时恢复流程
 
 **独有补丁**：
 - JSON 中过滤掉 `.INCLUDE` / `.INCLU--AP` 行（非实体字段）
@@ -49,15 +48,15 @@
 | RPMAX='003' 的行只有 HSL03 有值 | **每行的 16 个 HSL 列都可能非零**（不同 OBJNR 切片贡献不同期间金额） |
 | 用 CASE RPMAX 取单列即可 | **必须遍历所有 16 列**，全量累加 |
 
-**兜底规则**：阶段 2 拉完 DDIC 后，**必须**在 `abap-adt-data`（300）上 `runQuery` 取一行真实数据（含全部金额列），确认数据分布方式，再写阶段 3 技术设计和阶段 4 代码。**禁止凭 DDIC 字段名推断数据模型。**
+**兜底规则**：阶段 2 拉完 DDIC 后，**必须**用 `rfc_client.js --env=.env.data` 在数据系统(300)上取一行真实数据（含全部金额列），确认数据分布方式，再写阶段 3 技术设计和阶段 4 代码。**禁止凭 DDIC 字段名推断数据模型。**
 
 ---
 
 ## 2. 部署激活
 
 → 完整流程见 SKILL.md 阶段 5（`deploy_rfc.js` 编排）
-→ 故障速查表见 SKILL.md 附录「故障排查速查表」
-→ INCLUDE 类型错位根因见 SKILL.md 附录「INCLUDE 部署已知缺陷」
+→ 故障速查表见 SKILL.md 附录「故障排查速查」
+→ INCLUDE 类型错位根因见 [docs/rfc-adt-bridge.md](../../docs/rfc-adt-bridge.md)「INCLUDE 部署已知缺陷」
 
 **独有补丁**：
 - 源码必须写入 `output/<obj>/abap/sources/`，`deploy_rfc.js` 读这个目录
@@ -133,16 +132,25 @@ lv_name = |HSL{ iv_period }|.
 
 ---
 
-## 4. MCP/代理连通
+## 4. RFC 连接诊断
 
-每新会话 `rfc-proxy-server.js` 不会自启。先进 `curl localhost:9876` 探活。
+每新会话无需启动后台进程。`rfc_client.js` 每次执行自动连接→请求→断开。
 
-→ 自动安装流程见 SKILL.md 阶段 0
-→ 故障分层定位（DLL→网络→认证→代理→MCP）见 SKILL.md §0.4.1
-→ 连接恢复步骤见 SKILL.md §0.4.1
+**分层排查**：
+1. **DLL 层**：`node scripts/test_rfc.js` → 查看 `SAPNWRFC_HOME` + SDK lib 状态
+2. **网络层**：`node scripts/rfc_client.js --discovery` → 确认 RFC 可达 SAP
+3. **认证层**：核对 `.env` 中 `SAP_USERNAME`/`SAP_PASSWORD`/`SAP_CLIENT`
+4. **数据层**：`node scripts/rfc_client.js --env=.env.data --discovery` → 确认数据系统
+
+**常见错误**：
+- `Error during logon` → 用户名/密码/客户端错误，或账号锁定
+- `Connection refused` → SAP 实例未监听 RFC 端口，检查 `SAP_SYSNR`（**不可依赖端口推导**）
+- `Router` 相关错误 → SAP_ROUTER 配置错误或 VPN 未连接
+
+→ 自动安装流程见 [SKILL.md 阶段 0](SKILL.md)
 
 ---
 
 ## 一句话总结
 
-**DDIC 用 runQuery→DD03L 逐表串行，结果写文件不占上下文。部署走 deploy_rfc.js，代码字段从契约来不用猜。**
+**DDIC 用 rfc_client.js --sql --env=.env.data 逐表串行，结果写文件不占上下文。部署走 deploy_rfc.js，代码字段从契约来不用猜。**
