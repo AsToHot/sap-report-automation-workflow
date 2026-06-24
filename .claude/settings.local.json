@@ -24,7 +24,9 @@
       "WebFetch(domain:deepwiki.com)",
       "Bash(python -c ' *)",
       "Bash(node *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(git rm *)",
+      "Bash(git add *)"
     ]
   },
   "enableAllProjectMcpServers": true
