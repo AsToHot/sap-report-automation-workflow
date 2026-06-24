@@ -158,20 +158,6 @@ output/<object>/
     └── <name>F01.abap         # FORM 子程序
 ```
 
-## 已知限制
-
-- **文本元素 / GUI Status**：RFC ADT 通道不支持 SE32/SE41。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏。选择屏幕文本通过运行时设置：`%_xxx_%_app_%-text` 直接赋值（优先），或 `SELECTION_TEXTS_MODIFY` FM（备选）
-- **FM 参数格式**：必须用 ABAP 原生声明，`*"*"` 注释块被 RFC ADT 拒绝
-- **`freestyle` SQL 端点**：部分 SAP 版本返回 400，用 `--table <T>` 走 `ddic` 端点兜底
-
-## GitHub 推送准则
-
-1. **敏感信息零泄露**：`.env*` 全部 gitignore，含 SAP 凭据/服务器地址；仅提供 `.env.example` 空模板
-2. **`.claude/` 选择性上传**：`skills/` 公开分享；`settings.local.json` 仅含通用权限（Bash/Git/npm）
-3. **产物不上传**：`spec/`（除 `.gitkeep`）、`output/`（除 `.gitkeep`）、`_dist/`、`*.zip`、`*.log`、`.locks/` 全部 gitignore
-4. **Commit 规范**：Conventional Commits（feat/fix/chore/docs/refactor）+ 中文描述
-5. **推送前检查**：`git status` 确认无 `.env*`、无产物混入、无硬编码凭据
-
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
