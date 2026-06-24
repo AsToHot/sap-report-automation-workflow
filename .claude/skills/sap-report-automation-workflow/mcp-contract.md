@@ -1,122 +1,122 @@
-# abap-adt MCP：使用说明与参数契约
+# ADT REST 端点与 rfc_client.js 使用手册
 
-本 MCP 封装 **ADT REST**（`/sap/bc/adt/`），与 **Eclipse ADT（ABAP Development Tools）** 访问 AS ABAP 时使用的后端契约**同源**；工具名与参数以 Claude Code 下发的 JSON schema 为准。
+## rfc_client.js 用法
 
-## 说明书在哪里？
+```bash
+# 基本格式
+node scripts/rfc_client.js [--env=<file>] <模式> [参数]
 
-**没有**与 Claude Code 分开发行的独立「Eclipse ADT / ADT MCP 合并用户手册 PDF」。**官方契约**就是 Claude Code 为已启用 MCP 下发的 **JSON Tool Descriptor**：
+# 模式
+--discovery             连通性检查
+--search <query>        搜索 ABAP 对象（--type 限定类型）
+--sql <query>           执行 SQL（--table <T> 走 ddic 端点，无则走 freestyle）
+--source <uri>          拉取对象源码
+--inactive              列出未激活对象
+<METHOD> <URI>          通用 ADT REST 请求（--body 传请求体）
+```
 
-- 在本机通常位于：`<Claude Code 缓存>/mcps/abap-adt/tools/<工具名>.json`
-- 对话里系统也会要求：**调用任意 MCP 工具前必须先读对应 schema**（`required` 字段名即合法参数名，大小写一致）。
+### 常用示例
 
-代理**禁止**凭记忆猜测参数名（例如把 `max` 写成 `maxResults`）；**必须**打开上述 JSON 核对后再调用。
+```bash
+# Discovery
+node scripts/rfc_client.js --discovery
+node scripts/rfc_client.js --env=.env.data --discovery
 
-**与业务代码的关系**：MCP 拉取的表定义 / DD03L 结果写入 `metadata/tables/*.json` 后，**Open SQL 与内表字段只允许使用该元数据与 `docs/tech-design.md` 中的「字段契约」**，不得在实现阶段另起炉灶。详见主 Skill **「阶段间强引用」**。
+# 搜索对象
+node scripts/rfc_client.js --search "ZSAP_FI086"
+node scripts/rfc_client.js --search "BKPF" --type TABL
+node scripts/rfc_client.js --search "ZGD01" --type DEVC
 
----
+# SQL 查询
+node scripts/rfc_client.js --env=.env.data --rows=2000 \
+  --sql "SELECT FIELDNAME, DATATYPE, LENG FROM DD03L WHERE TABNAME EQ 'BKPF' ORDER BY POSITION" \
+  --table DD03L
 
-## 报表工作流常用工具（按阶段）
+# COUNT
+node scripts/rfc_client.js --env=.env.data \
+  --sql "SELECT COUNT(*) AS CNT FROM BSEG WHERE BUKRS='1000'" --table BSEG
 
-### 0. 连通性
+# 拉取源码
+node scripts/rfc_client.js --source "/sap/bc/adt/programs/programs/zsap_fi086/source/main"
+node scripts/rfc_client.js --source "/sap/bc/adt/programs/includes/zsap_fi086t01/source/main"
 
+# 通用请求
+echo "SELECT * FROM TADIR" | node scripts/rfc_client.js --env=.env.data \
+  POST /sap/bc/adt/datapreview/ddic?rowNumber=10&ddicEntityName=TADIR --body -
+```
 
-| 工具            | 必填参数      | 说明                |
-| ------------- | --------- | ----------------- |
-| `healthcheck` | 无（传 `{}`） | 确认 MCP 与 SAP 会话可用 |
+### 输出格式
 
+成功时 stdout 输出 JSON：
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "body": "<XML or text response>",
+  "dataType": "xml"
+}
+```
 
-### 1. 透明表 / DDIC：拉字段与定义（勿用错工具）
+失败时 stderr 输出错误，exit(1)。
 
+### 选项
 
-| 目的           | 工具                | 必填参数              | 说明                                                              |
-| ------------ | ----------------- | ----------------- | --------------------------------------------------------------- |
-| **整表定义（推荐）** | `getObjectSource` | `objectSourceUrl` | 例：`/sap/bc/adt/ddic/tables/bkpf/source/main`（表名在 URI 中**小写**最稳） |
-| 行列表字段        | `runQuery`        | `sqlQuery`        | 可选 `rowNumber`。例：查 `DD03L`，`AS4LOCAL = 'A'`                     |
-| 搜索对象 URI     | `searchObject`    | `query`           | 可选 `objType`、`**max`**（注意：是 `**max`不是 maxResults**）             |
-
-
-**易错**：`ddicElement` / `ddicRepositoryAccess` **不是**「完整字段字典」接口，不要当主路径反复改 `path` 试错。
-
-### 2. 程序：读/写/检查/激活
-
-
-| 步骤       | 工具                                | 必填参数                                     |
-| -------- | --------------------------------- | ---------------------------------------- |
-| 解析对象 URL | `findObjectPath` 或 `searchObject` | 见各 JSON                                  |
-| 加锁       | `lock`                            | `objectUrl`                              |
-| 写源码      | `setObjectSource`                 | `objectSourceUrl`、`source`、`lockHandle`  |
-| 语法检查     | `syntaxCheckCode`                 | `code`（可选 `url`/`mainProgram` 等见 schema） |
-| 激活       | `activateByName`                  | `objectName`、`objectUrl`                 |
-
-
-`lock` 返回里若含 **lock handle**，须原样传入 `setObjectSource` 的 `lockHandle`（字段名以实际响应与 schema 为准）。
-
-### 3. 创建新对象（若需）
-
-
-| 工具             | 必填参数                                                     |
-| -------------- | -------------------------------------------------------- |
-| `createObject` | `objtype`、`name`、`parentName`、`description`、`parentPath` |
-
-
-具体 `objtype` 取值以系统 `objectTypes` 工具或 ADT 为准，**先查 schema / 再调用**。
-
----
-
-## 常见参数错误（对照 schema 自查）
-
-1. `**searchObject`**：上限字段为 `**max`**，不是 `maxResults`。
-2. **DDIC 表源码**：用 `**getObjectSource`** + `objectSourceUrl` 指向 `.../ddic/tables/<name>/source/main`，不要指望 `ddicElement` 返回完整字段列表。
-3. `**runQuery`**：必填只有 `sqlQuery`；未传合法 SQL 会失败，不是「ADT 慢」。
-
----
-
-## 整包开发对象（如 `DEVCLASS = ZGD01`）：禁止「盲试 URI」，必须分类 + 分批
-
-读**整张表**和读**整个包**不是同一类问题：包里有成百上千个对象、多种 `TADIR-OBJECT` 类型。若对每个对象用 `searchObject` 乱试、或对 ADT 路径猜来猜去，就会表现为**一直试错**，且数据量一大必然超时或刷屏。
-
-### 正确顺序（数据量大时也要坚持）
-
-1. **先统计、再分类（一次或少量几次查询）**
-  - 用 `**runQuery`** 查 `TADIR`（或你们允许的清单视图），**按对象类型聚合**，例如：
-    - `SELECT object, COUNT(*) AS cnt FROM tadir WHERE devclass = 'ZGD01' AND pgmid = 'R3TR' GROUP BY object ORDER BY cnt DESC`
-  - 目的：知道包里有 **PROG / CLAS / FUGR / TABL / …** 各多少，**再决定拉取顺序和批量大小**，而不是一口气拉全量。
-2. **再拉清单（可分页）**
-  - 按类型分批查明细，例如只拉 `PROG`：  
-   `SELECT object, obj_name FROM tadir WHERE devclass = 'ZGD01' AND pgmid = 'R3TR' AND object = 'PROG' ORDER BY obj_name`
-  - 使用 `runQuery` 的 `**rowNumber`** 限制单次行数；若仍很多，**按字母或 `obj_name` 范围拆批**（`obj_name` 前缀、`BETWEEN` 等），或多次查询分段落盘。
-  - **禁止**依赖「对一个包名反复 `searchObject`」当枚举主手段（适合补全单个对象，不适合整包）。
-3. **按类型套 ADT URI 模板（不猜）**
-  - 对每个 `(OBJECT, OBJ_NAME)`，用**固定规则**拼 `objectSourceUrl`，再调 `**getObjectSource`**。常见模板（**名称一律小写**拼进路径，与 ADT 一致）：
-    - 可执行程序（REPORT）：`/sap/bc/adt/programs/programs/<name>/source/main`
-    - Include（PROG/I）：`/sap/bc/adt/programs/includes/<name>/source/main`
-    - 类（CLAS）：`/sap/bc/adt/oo/classes/<name>/source/main`
-    - 接口（INTF）：`/sap/bc/adt/oo/interfaces/<name>/source/main`
-    - 函数组（FUGR）：`/sap/bc/adt/functions/groups/<name>/source/main`
-    - Function Module（FUNC）：`/sap/bc/adt/functions/groups/<fugr>/fmodules/<name>/source/main`
-    - 透明表（TABL）：`/sap/bc/adt/ddic/tables/<name>/source/main`
-    - BAdI 增强点（ENHO）：`/sap/bc/adt/enhancements/enhs/<name>/source/main`
-    - 域/数据元素等：见包内或团队的 **URI 规则表**（与 Eclipse ADT 打开对象时的 URL 一致即可）。
-  - 若某类型一次失败：**先换该类已知备选路径**，仍失败再对该对象单独 `findObjectPath` / `searchObject`，**不要把整包拉回试错模式**。
-4. **分批落盘 + 可续跑**
-  - 每批处理 **N 条**（如 20～50 个对象，视单对象体积调整），写入目录并维护 `**manifest.json`/`progress.tsv`**：已拉取、失败原因、下一批游标。
-  - 失败批次**单独重试**，避免从第一个对象重新开始。
-5. **超大规模包的替代**
-  - 若对象数达到数百上千且以**全量镜像**为目标，优先评估 **abapGit Export / 系统侧导出**，MCP 更适合**增量、按清单、可续跑**的拉取与自动化，而不是单次会话硬拉全集。
-
-### 小结
-
-
-| 错误做法                   | 正确做法                               |
-| ---------------------- | ---------------------------------- |
-| 整包用 `searchObject` 当枚举 | `TADIR` 清单 + 按类型                   |
-| 每个对象猜 ADT 路径           | 按 `OBJECT` 类型套**固定 URI 模板**        |
-| 一次拉 500+ 对象不限制         | `**rowNumber` / 分批 / manifest 续跑** |
-| 失败从头重试                 | **只重试失败子集**                        |
-
+| 选项 | 说明 |
+|------|------|
+| `--env=<file>` | 配置文件（默认 `.env`；数据系统用 `.env.data`） |
+| `--rows=<n>` | SQL 返回行数（默认 100） |
+| `--table <T>` | SQL 走 `ddic` 端点（稳定，推荐） |
+| `--type <t>` | 搜索对象类型（TABL/PROG/CLAS/DEVC/FUGR/INTF） |
+| `--body <str>` | 请求体（`-` 从 stdin 读取） |
 
 ---
 
-## 上游开源项目（人类可读文档）
+## 常用 ADT REST 端点
 
-MCP 实现来自例如 [mario-andreschak/mcp-abap-abap-adt-api](https://github.com/mario-andreschak/mcp-abap-abap-adt-api)（README、Issues）。**运行时仍以 Claude Code 下发的 `tools/*.json` 为准**（版本不一致时以本机为准）。
+### 查询类
+
+| 操作 | 方法 | URI | 说明 |
+|------|------|-----|------|
+| Discovery | GET | `/sap/bc/adt/discovery` | 连通验证 |
+| 搜索对象 | GET | `/sap/bc/adt/repository/informationsystem/search?operation=quickSearch&query=<q>&maxResults=<n>[&objectType=<t>]` | 返回 XML |
+| SQL 查询（DDIC） | POST | `/sap/bc/adt/datapreview/ddic?rowNumber=<n>&ddicEntityName=<T>` | Body=SQL，稳定 |
+| SQL 查询（自由） | POST | `/sap/bc/adt/datapreview/freestyle?rowNumber=<n>` | Body=SQL，可能 400 |
+| 读取程序源码 | GET | `/sap/bc/adt/programs/programs/{name}/source/main` | |
+| 读取 Include 源码 | GET | `/sap/bc/adt/programs/includes/{name}/source/main` | |
+| 读取类源码 | GET | `/sap/bc/adt/oo/classes/{name}/source/main` | |
+| 读取接口源码 | GET | `/sap/bc/adt/oo/interfaces/{name}/source/main` | |
+| 读取函数组源码 | GET | `/sap/bc/adt/functions/groups/{name}/source/main` | |
+| 未激活对象列表 | GET | `/sap/bc/adt/inactiveobjects` | |
+
+### 操作类（deploy_rfc.js 内部使用）
+
+| 操作 | 方法 | URI | Content-Type |
+|------|------|-----|-------------|
+| 创建程序 | POST | `/sap/bc/adt/programs/programs` | `application/vnd.sap.adt.programs.programs.v4+xml` |
+| 创建 Include | POST | `/sap/bc/adt/programs/includes` | 同上 |
+| 创建类 | POST | `/sap/bc/adt/oo/classes` | |
+| 创建接口 | POST | `/sap/bc/adt/oo/interfaces` | |
+| 创建函数组 | POST | `/sap/bc/adt/functions/groups` | |
+| Lock | POST | `{objectUri}?_action=LOCK&accessMode=MODIFY` | |
+| Unlock | POST | `{objectUri}?_action=UNLOCK&lockHandle={h}` | |
+| 上传源码 | PUT | `{objectUri}/source/main?lockHandle={h}` | `text/plain; charset=utf-8` |
+| 语法检查 | POST | `{objectUri}/source/main?method=check` | |
+| 激活 | POST | `/sap/bc/adt/activation?method=activate&preauditRequested=true` | `application/vnd.sap.adt.activation+xml` |
+
+### 对象类型映射
+
+| ADT 码 | URI 前缀 | 命名约定 |
+|--------|---------|---------|
+| `PROG/P` | `/sap/bc/adt/programs/programs/` | `ZSAP_xxx` / `ZFI_xxx` |
+| `PROG/I` | `/sap/bc/adt/programs/includes/` | `ZSAP_xxxT01` 等 |
+| `CLAS` | `/sap/bc/adt/oo/classes/` | `ZCL_xxx` |
+| `INTF` | `/sap/bc/adt/oo/interfaces/` | `ZIF_xxx` |
+| `FUGR` | `/sap/bc/adt/functions/groups/` | `ZFG_xxx` |
+| `TABL` | `/sap/bc/adt/ddic/tables/` | 任意 |
+
+### 整包开发对象拉取
+
+1. **先统计**：`--sql "SELECT OBJECT, COUNT(*) AS CNT FROM TADIR WHERE DEVCLASS='ZGD01' AND PGMID='R3TR' GROUP BY OBJECT" --table TADIR`
+2. **再按类型分批**：按 PROG/CLAS/FUGR 分类，每批 20-50 个对象
+3. **套 URI 模板**：按上表拼 `{URI前缀}/{name}/source/main`
+4. **分批落盘** + manifest.json 续跑
