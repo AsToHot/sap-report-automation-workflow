@@ -93,7 +93,7 @@ AND skat~spras = @sy-langu
 
 - **TYPE 用 ROLLNAME**：`TYPE bukrs`（数据元素），禁止 `TYPE bkpf-bukrs`（表-字段名）
 - **New OpenSQL（7.40+）**：host variable 用 `@`，短 SELECT 也容易漏
-- **FOR ALL ENTRIES 类型匹配**：两边 ROLLNAME 不同 → 改用 SELECT 全表 + SORT + BINARY SEARCH
+- **FOR ALL ENTRIES 类型匹配**：两边字段 LENG 不同（如 KHINR CHAR 12 vs PRCTR CHAR 10）→ 激活直接报错。**修复**：内部结构体字段显式 `TYPE cepc-khinr`（对齐 DB 字段长度），不要用 `TYPE zsap_bukrs-prctr`
 - **CL_SALV_TABLE GUI Status**：`report = 'SAPLKKBL'`（不是 `sy-repid`）
 
 ### 3.1 ASSIGN COMPONENT 动态字段名与 NUMC 类型不匹配（ZTEST003 血训，最高优先级）
@@ -154,3 +154,69 @@ lv_name = |HSL{ iv_period }|.
 ## 一句话总结
 
 **DDIC 用 rfc_client.js --sql --env=.env.data 逐表串行，结果写文件不占上下文。部署走 deploy_rfc.js，代码字段从契约来不用猜。**
+
+---
+
+## 5. ZTEST101 实战卡点（2026-07）
+
+### 5.1 deploy_rfc.js 两个隐藏格式要求
+
+| 卡点 | 错误信息 | 根因 | 正确做法 |
+|------|---------|------|---------|
+| 源码目录 | `Source directory not found: .../abap/sources` | 源码必须放 `abap/sources/` 子目录 | `mkdir -p output/<prog>/abap/sources/` |
+| 配置文件 | `Package name not found in deployment-config.md` | 脚本用正则 `\| 目标包 \| ([^|]+) \|` 解析 | 写 `\| 目标包 \| $TMP \|`，不能用自由格式 |
+
+### 5.2 ADT 选择屏幕限制
+
+| 卡点 | 报错 | 正确做法 |
+|------|------|---------|
+| `TITLE TEXT-t00` | `字段 "%_B1_%_APP_%-TEXT" 未知` | `WITH FRAME` 不加 TITLE（ADT 无法创建文本元素） |
+| `%_b1_%_app_%-text` | 同上 | Block 标题不支持运行时赋值，去掉 |
+
+### 5.3 DDIC 类型陷阱
+
+```abap
+" ❌ char10/char64/curr15_2 不是有效 DDIC 数据元素 → 语法错
+TYPES: BEGIN OF tys_row,
+         hkont_fy TYPE char10,    " 不存在
+         amount   TYPE curr15_2,  " 不存在
+       END OF tys_row.
+
+" ✅ 用实际 DDIC 数据元素
+TYPES: BEGIN OF tys_row,
+         hkont_fy TYPE racct,     " CHAR 10
+         amount   TYPE hslxx12,   " CURR 23,2
+       END OF tys_row.
+```
+
+### 5.4 ZSAP_FI054 数据特征（申报表）
+
+- **TRADEDATE**：CHAR(64)，税务数据行用 YYYYMMDD（`20260301`），非税行用 YYYY-MM-DD（`2026-06-05`）。CHAR 字段做日期范围过滤用字符串比较即可
+- **HKONT_FY/BUKRS 稀疏**：10,250 行中仅 ~10 行有 HKONT_FY 值，其余全 NULL。带 HKONT_FY 过滤时 WHERE 必须加 `NE ''`
+- **ddic 端点不兼容**：`fetch_table.js --table=ZSAP_FI054` 聚合查询报 400，改用 `rfc_client.js --sql --table` 走 freestyle 端点
+
+### 5.5 FS 字段名误标（EE090）
+
+FS 文档中两处字段名与实际 DDIC 不符：
+- `ZSAP_FI054-KONT_FY` → 实际字段名 **`HKONT_FY`**
+- `SKA1-KTOPL="SKA1"` → **不存在此科目表**，实际为 `KTOPL='EEKA'`（与控制范围 KOKRS 一致）
+
+**教训**：阶段 2.1 FS↔DDIC 验证不可跳过，不能盲信 FS 字段名。
+
+### 5.6 FOR ALL ENTRIES 跨表 LENG 不匹配
+
+```abap
+" ❌ 激活失败：KHINR(CHAR 12) vs PRCTR(CHAR 10)
+TYPES: BEGIN OF tys_map,
+         prctr TYPE zsap_bukrs-prctr,  " CHAR 10
+       END OF tys_map.
+SELECT ... FROM cepc FOR ALL ENTRIES IN @gt_map
+  WHERE khinr = @gt_map-prctr.  " CHAR 12 = CHAR 10 → 类型不匹配
+
+" ✅ 内部字段对齐 DB 列长度
+TYPES: BEGIN OF tys_map,
+         prctr TYPE cepc-khinr,  " CHAR 12 → 对齐 CEPC-KHINR
+       END OF tys_map.
+```
+
+参考模板 ZSAP_FI244 的做法：显式 `prctr TYPE cepc-khinr`。
