@@ -85,7 +85,7 @@ AND skat~spras = '1'
 AND skat~spras = @sy-langu
 ```
 
-**预判**：写完代码后执行 `grep -rn "'ZH'\|'EN'\|'DE'" output/<program>/abap/sources/`，命中 → 对照 metadata JSON 检查 LENG。
+**预判**：写完代码后执行 `grep -rn "'ZH'\|'EN'\|'DE'" output/<program>/abap/`，命中 → 对照 metadata JSON 检查 LENG。
 
 **预防**：SKILL.md §4.9 新增「第零轮：DDIC 字面值类型长度」——代码写完后第一件事就是逐字面值对照 metadata LENG，通过才进入后续五轮。
 
@@ -106,7 +106,7 @@ AND skat~spras = @sy-langu
 
 **预判**：
 ```bash
-# 阶段 4 写完代码后，在 abap/sources 目录执行：
+# 阶段 4 写完代码后，在 abap 目录执行：
 grep -n "ASSIGN COMPONENT" *.abap
 # → 对每个 ASSIGN COMPONENT，打开对应 metadata JSON 检查拼接变量的 DATATYPE 和 LENG
 # → 如果是 NUMC，确认拼接后的字段名字符数 == 结构体字段名字符数
@@ -159,11 +159,10 @@ lv_name = |HSL{ iv_period }|.
 
 ## 5. ZTEST101 实战卡点（2026-07）
 
-### 5.1 deploy_rfc.js 两个隐藏格式要求
+### 5.1 deployment-config.md 格式要求（部署前置）
 
 | 卡点 | 错误信息 | 根因 | 正确做法 |
 |------|---------|------|---------|
-| 源码目录 | `Source directory not found: .../abap/sources` | 源码必须放 `abap/sources/` 子目录 | `mkdir -p output/<prog>/abap/sources/` |
 | 配置文件 | `Package name not found in deployment-config.md` | 脚本用正则 `\| 目标包 \| ([^|]+) \|` 解析 | 写 `\| 目标包 \| $TMP \|`，不能用自由格式 |
 
 ### 5.2 ADT 选择屏幕限制

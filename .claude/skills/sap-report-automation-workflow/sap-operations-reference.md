@@ -300,7 +300,7 @@ node scripts/deploy_rfc.js <程序名>
 **入参**：程序名（如 `ZSAP_FI086`），位置参数 1
 
 **前置条件**：
-- `output/<程序名>/abap/sources/` 存在，含 `<程序名>.abap` + `<程序名>T01.abap` + `<程序名>SEL.abap` + `<程序名>F01.abap`
+- `output/<程序名>/abap/` 存在，含 `<程序名>.abap` + `<程序名>T01.abap` + `<程序名>SEL.abap` + `<程序名>F01.abap`
 - `output/<程序名>/docs/deployment-config.md` 含目标包和传输请求
 
 **行为流程**：
