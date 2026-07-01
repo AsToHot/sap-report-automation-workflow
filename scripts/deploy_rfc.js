@@ -19,7 +19,7 @@ if (!progName) {
   process.exit(1);
 }
 
-const srcDir = path.resolve(process.cwd(), "output", progName, "abap", "sources");
+const srcDir = path.resolve(process.cwd(), "output", progName, "abap");
 if (!fs.existsSync(srcDir)) {
   console.error(`[FATAL] Source directory not found: ${srcDir}`);
   process.exit(1);
