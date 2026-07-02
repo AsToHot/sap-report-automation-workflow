@@ -1,0 +1,585 @@
+{
+  "tabname": "ZSAP_FI054",
+  "fetched_count": 64,
+  "matched": true,
+  "pulled_at": "2026-07-02T07:46:54.616Z",
+  "source": ".env.data",
+  "fields": [
+    {
+      "FIELDNAME": "MANDT",
+      "POSITION": 1,
+      "KEYFLAG": "X",
+      "ROLLNAME": "MANDT",
+      "DATATYPE": "CLNT",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "URID",
+      "POSITION": 2,
+      "KEYFLAG": "X",
+      "ROLLNAME": "ZURID",
+      "DATATYPE": "CHAR",
+      "LENG": 32,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OURBANKACCOUNTNUMBER",
+      "POSITION": 3,
+      "KEYFLAG": "",
+      "ROLLNAME": "BUKRS",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OURBANKACCOUNTNAME",
+      "POSITION": 4,
+      "KEYFLAG": "",
+      "ROLLNAME": "BELNR_D",
+      "DATATYPE": "CHAR",
+      "LENG": 256,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OURCURRENCYID",
+      "POSITION": 5,
+      "KEYFLAG": "",
+      "ROLLNAME": "GJAHR",
+      "DATATYPE": "CHAR",
+      "LENG": 32,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TRADEDATE",
+      "POSITION": 6,
+      "KEYFLAG": "",
+      "ROLLNAME": "LIFNR",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "JYRQ",
+      "POSITION": 7,
+      "KEYFLAG": "",
+      "ROLLNAME": "NAME1_GP",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TRADEDATETIME",
+      "POSITION": 8,
+      "KEYFLAG": "",
+      "ROLLNAME": "KUNNR",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "JYSJ",
+      "POSITION": 9,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZCLID",
+      "DATATYPE": "TIMS",
+      "LENG": 6,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "VALUEDATE",
+      "POSITION": 10,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZCLNM",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "QXRQ",
+      "POSITION": 11,
+      "KEYFLAG": "",
+      "ROLLNAME": "HKONT",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "MONEYWAY",
+      "POSITION": 12,
+      "KEYFLAG": "",
+      "ROLLNAME": "HKONT",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "AMOUNT",
+      "POSITION": 13,
+      "KEYFLAG": "",
+      "ROLLNAME": "KOSTL",
+      "DATATYPE": "CURR",
+      "LENG": 15,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "AMOUNT_LEFT",
+      "POSITION": 14,
+      "KEYFLAG": "",
+      "ROLLNAME": "RSTGR",
+      "DATATYPE": "CURR",
+      "LENG": 15,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "CHECKCODE",
+      "POSITION": 15,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZPOST",
+      "DATATYPE": "CHAR",
+      "LENG": 128,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PURPOSE",
+      "POSITION": 16,
+      "KEYFLAG": "",
+      "ROLLNAME": "UMSKZ",
+      "DATATYPE": "CHAR",
+      "LENG": 256,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OPPOSITEACCOUNTNUMBER",
+      "POSITION": 17,
+      "KEYFLAG": "",
+      "ROLLNAME": "HKONT",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OPPOSITEACCOUNTNAME",
+      "POSITION": 18,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZLV",
+      "DATATYPE": "CHAR",
+      "LENG": 512,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OPPOSITEBANK",
+      "POSITION": 19,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZQX01",
+      "DATATYPE": "CHAR",
+      "LENG": 128,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "OPPCURRENCYID",
+      "POSITION": 20,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZLCBH",
+      "DATATYPE": "CHAR",
+      "LENG": 32,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "BANKSERIALNUMBER",
+      "POSITION": 21,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZLCLX",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NOTECODE",
+      "POSITION": 22,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZSQH",
+      "DATATYPE": "CHAR",
+      "LENG": 64,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "BUKRS",
+      "POSITION": 23,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZKUNNR_JM",
+      "DATATYPE": "CHAR",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "MULTI_DOC",
+      "POSITION": 24,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZFR",
+      "DATATYPE": "CHAR",
+      "LENG": 120,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "MULTI_SQH",
+      "POSITION": 25,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZE_FRMC",
+      "DATATYPE": "CHAR",
+      "LENG": 120,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "BELNR",
+      "POSITION": 26,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZSHY_CAT",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "GJAHR",
+      "POSITION": 27,
+      "KEYFLAG": "",
+      "ROLLNAME": "XBLNR",
+      "DATATYPE": "NUMC",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LIFNR",
+      "POSITION": 28,
+      "KEYFLAG": "",
+      "ROLLNAME": "BAPI_MTYPE",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NAME1",
+      "POSITION": 29,
+      "KEYFLAG": "",
+      "ROLLNAME": "BAPI_MSG",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KUNNR",
+      "POSITION": 30,
+      "KEYFLAG": "",
+      "ROLLNAME": "PROGRAMM",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZCLID",
+      "POSITION": 31,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZUNAME1",
+      "DATATYPE": "CHAR",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZCLNM",
+      "POSITION": 32,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZDATUM1",
+      "DATATYPE": "CHAR",
+      "LENG": 20,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "HKONT_YH",
+      "POSITION": 33,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZUZEIT1",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "HKONT_FY",
+      "POSITION": 34,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZUNAME2",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KOSTL",
+      "POSITION": 35,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZDATUM2",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "RSTGR",
+      "POSITION": 36,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZUZEIT2",
+      "DATATYPE": "CHAR",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZTEXT",
+      "POSITION": 37,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 120,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZPOST",
+      "POSITION": 38,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "UMSKZ",
+      "POSITION": 39,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "HKONT_SG",
+      "POSITION": 40,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZLV01",
+      "POSITION": 41,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "DEC",
+      "LENG": 7,
+      "DECIMALS": 4
+    },
+    {
+      "FIELDNAME": "ZQX",
+      "POSITION": 42,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "INT2",
+      "LENG": 5,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZLCBH",
+      "POSITION": 43,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 30,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZLCLX",
+      "POSITION": 44,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 30,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "AMOUNT_BJ",
+      "POSITION": 45,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CURR",
+      "LENG": 15,
+      "DECIMALS": 2
+    },
+    {
+      "FIELDNAME": "ZDQR",
+      "POSITION": 46,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZSQH",
+      "POSITION": 47,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KUNNR_JM",
+      "POSITION": 48,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZTEXT_N",
+      "POSITION": 49,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 120,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZFR",
+      "POSITION": 50,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 20,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZFRMC",
+      "POSITION": 51,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 50,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "SHY_CAT",
+      "POSITION": 52,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "XBLNR",
+      "POSITION": 53,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 16,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZFK_NO",
+      "POSITION": 54,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 16,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "BUY_DATE",
+      "POSITION": 55,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TYPE",
+      "POSITION": 57,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "MESSAGE",
+      "POSITION": 58,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 220,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PROGRAMM",
+      "POSITION": 60,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "DATS",
+      "LENG": 40,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "CRNAME",
+      "POSITION": 61,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "TIMS",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "CRDATE",
+      "POSITION": 62,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "CHAR",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "CRTIME",
+      "POSITION": 63,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "DATS",
+      "LENG": 6,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LCNAME",
+      "POSITION": 64,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "TIMS",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LCDATE",
+      "POSITION": 65,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LCTIME",
+      "POSITION": 66,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "",
+      "LENG": 6,
+      "DECIMALS": 0
+    }
+  ]
+}

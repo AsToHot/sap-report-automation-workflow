@@ -1,0 +1,477 @@
+{
+  "tabname": "CEPC",
+  "fetched_count": 52,
+  "matched": true,
+  "pulled_at": "2026-07-02T07:46:53.649Z",
+  "source": ".env.data",
+  "fields": [
+    {
+      "FIELDNAME": "MANDT",
+      "POSITION": 1,
+      "KEYFLAG": "X",
+      "ROLLNAME": "MANDT",
+      "DATATYPE": "CLNT",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PRCTR",
+      "POSITION": 2,
+      "KEYFLAG": "X",
+      "ROLLNAME": "PRCTR",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "DATBI",
+      "POSITION": 3,
+      "KEYFLAG": "X",
+      "ROLLNAME": "DATBI",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KOKRS",
+      "POSITION": 4,
+      "KEYFLAG": "X",
+      "ROLLNAME": "KOKRS",
+      "DATATYPE": "CHAR",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "DATAB",
+      "POSITION": 5,
+      "KEYFLAG": "",
+      "ROLLNAME": "DATAB",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ERSDA",
+      "POSITION": 6,
+      "KEYFLAG": "",
+      "ROLLNAME": "ERFDT",
+      "DATATYPE": "DATS",
+      "LENG": 8,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "USNAM",
+      "POSITION": 7,
+      "KEYFLAG": "",
+      "ROLLNAME": "ERFNM",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "MERKMAL",
+      "POSITION": 8,
+      "KEYFLAG": "",
+      "ROLLNAME": "FDMERKMAL",
+      "DATATYPE": "CHAR",
+      "LENG": 30,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ABTEI",
+      "POSITION": 9,
+      "KEYFLAG": "",
+      "ROLLNAME": "ABTEIL",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "VERAK",
+      "POSITION": 10,
+      "KEYFLAG": "",
+      "ROLLNAME": "VERAPC",
+      "DATATYPE": "CHAR",
+      "LENG": 20,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "VERAK_USER",
+      "POSITION": 11,
+      "KEYFLAG": "",
+      "ROLLNAME": "VERAPC_USER",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "WAERS",
+      "POSITION": 12,
+      "KEYFLAG": "",
+      "ROLLNAME": "WAERS",
+      "DATATYPE": "CUKY",
+      "LENG": 5,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NPRCTR",
+      "POSITION": 13,
+      "KEYFLAG": "",
+      "ROLLNAME": "NPRCTR",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LAND1",
+      "POSITION": 14,
+      "KEYFLAG": "",
+      "ROLLNAME": "LAND1",
+      "DATATYPE": "CHAR",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ANRED",
+      "POSITION": 15,
+      "KEYFLAG": "",
+      "ROLLNAME": "ANRED",
+      "DATATYPE": "CHAR",
+      "LENG": 15,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NAME1",
+      "POSITION": 16,
+      "KEYFLAG": "",
+      "ROLLNAME": "NAME1_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NAME2",
+      "POSITION": 17,
+      "KEYFLAG": "",
+      "ROLLNAME": "NAME2_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NAME3",
+      "POSITION": 18,
+      "KEYFLAG": "",
+      "ROLLNAME": "NAME3_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "NAME4",
+      "POSITION": 19,
+      "KEYFLAG": "",
+      "ROLLNAME": "NAME4_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ORT01",
+      "POSITION": 20,
+      "KEYFLAG": "",
+      "ROLLNAME": "ORT01_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ORT02",
+      "POSITION": 21,
+      "KEYFLAG": "",
+      "ROLLNAME": "ORT02_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "STRAS",
+      "POSITION": 22,
+      "KEYFLAG": "",
+      "ROLLNAME": "STRAS_GP",
+      "DATATYPE": "CHAR",
+      "LENG": 35,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PFACH",
+      "POSITION": 23,
+      "KEYFLAG": "",
+      "ROLLNAME": "PFACH",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PSTLZ",
+      "POSITION": 24,
+      "KEYFLAG": "",
+      "ROLLNAME": "PSTLZ",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PSTL2",
+      "POSITION": 25,
+      "KEYFLAG": "",
+      "ROLLNAME": "PSTL2",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "SPRAS",
+      "POSITION": 26,
+      "KEYFLAG": "",
+      "ROLLNAME": "SPRAS",
+      "DATATYPE": "LANG",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELBX",
+      "POSITION": 27,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELBX",
+      "DATATYPE": "CHAR",
+      "LENG": 15,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELF1",
+      "POSITION": 28,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELF1",
+      "DATATYPE": "CHAR",
+      "LENG": 16,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELF2",
+      "POSITION": 29,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELF2",
+      "DATATYPE": "CHAR",
+      "LENG": 16,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELFX",
+      "POSITION": 30,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELFX",
+      "DATATYPE": "CHAR",
+      "LENG": 31,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELTX",
+      "POSITION": 31,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELTX",
+      "DATATYPE": "CHAR",
+      "LENG": 30,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TELX1",
+      "POSITION": 32,
+      "KEYFLAG": "",
+      "ROLLNAME": "TELX1",
+      "DATATYPE": "CHAR",
+      "LENG": 30,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "DATLT",
+      "POSITION": 33,
+      "KEYFLAG": "",
+      "ROLLNAME": "DATLT",
+      "DATATYPE": "CHAR",
+      "LENG": 14,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "DRNAM",
+      "POSITION": 34,
+      "KEYFLAG": "",
+      "ROLLNAME": "PCDNAM",
+      "DATATYPE": "CHAR",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KHINR",
+      "POSITION": 35,
+      "KEYFLAG": "",
+      "ROLLNAME": "PHINR",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "BUKRS",
+      "POSITION": 36,
+      "KEYFLAG": "",
+      "ROLLNAME": "BUKRS",
+      "DATATYPE": "CHAR",
+      "LENG": 4,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "VNAME",
+      "POSITION": 37,
+      "KEYFLAG": "",
+      "ROLLNAME": "JV_NAME",
+      "DATATYPE": "CHAR",
+      "LENG": 6,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "RECID",
+      "POSITION": 38,
+      "KEYFLAG": "",
+      "ROLLNAME": "JV_RECIND",
+      "DATATYPE": "CHAR",
+      "LENG": 2,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ETYPE",
+      "POSITION": 39,
+      "KEYFLAG": "",
+      "ROLLNAME": "JV_ETYPE",
+      "DATATYPE": "CHAR",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "TXJCD",
+      "POSITION": 40,
+      "KEYFLAG": "",
+      "ROLLNAME": "TXJCD",
+      "DATATYPE": "CHAR",
+      "LENG": 15,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "REGIO",
+      "POSITION": 41,
+      "KEYFLAG": "",
+      "ROLLNAME": "REGIO",
+      "DATATYPE": "CHAR",
+      "LENG": 3,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KVEWE",
+      "POSITION": 42,
+      "KEYFLAG": "",
+      "ROLLNAME": "KVEWE",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KAPPL",
+      "POSITION": 43,
+      "KEYFLAG": "",
+      "ROLLNAME": "KAPPL",
+      "DATATYPE": "CHAR",
+      "LENG": 2,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "KALSM",
+      "POSITION": 44,
+      "KEYFLAG": "",
+      "ROLLNAME": "KALSM_D",
+      "DATATYPE": "CHAR",
+      "LENG": 6,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LOGSYSTEM",
+      "POSITION": 45,
+      "KEYFLAG": "",
+      "ROLLNAME": "LOGSYSTEM",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "LOCK_IND",
+      "POSITION": 46,
+      "KEYFLAG": "",
+      "ROLLNAME": "LOCK_IND",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "PCA_TEMPLATE",
+      "POSITION": 47,
+      "KEYFLAG": "",
+      "ROLLNAME": "PCA_TEMPLATE",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "SEGMENT",
+      "POSITION": 48,
+      "KEYFLAG": "",
+      "ROLLNAME": "FB_SEGMENT",
+      "DATATYPE": "CHAR",
+      "LENG": 10,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZFUNC",
+      "POSITION": 50,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZE_CHANNEL",
+      "DATATYPE": "CHAR",
+      "LENG": 1,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZCHANNEL",
+      "POSITION": 51,
+      "KEYFLAG": "",
+      "ROLLNAME": "ZE_RESP_GRP",
+      "DATATYPE": "CHAR",
+      "LENG": 2,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZGRP",
+      "POSITION": 52,
+      "KEYFLAG": "",
+      "ROLLNAME": "GSBER",
+      "DATATYPE": "CHAR",
+      "LENG": 12,
+      "DECIMALS": 0
+    },
+    {
+      "FIELDNAME": "ZBRAND",
+      "POSITION": 53,
+      "KEYFLAG": "",
+      "ROLLNAME": "",
+      "DATATYPE": "",
+      "LENG": 4,
+      "DECIMALS": 0
+    }
+  ]
+}
