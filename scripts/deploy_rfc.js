@@ -1,3 +1,15 @@
+/**
+ * deploy_rfc.js — 兼容入口（REPORT + 固定 INCLUDE）
+ *
+ * ⚠ 推荐使用新版独立脚本，覆盖更全面，参数字段更明确:
+ *   deploy_report.js         — 单程序（无 INCLUDE）
+ *   deploy_report_include.js — REPORT + 自动发现 INCLUDE
+ *   deploy_fugr.js           — FUGR + FM
+ *   deploy_clas.js           — CLAS
+ *   deploy_intf.js           — INTF
+ *
+ * 本脚本保留用于需要固定 T01/SEL/F01/O01 结构的旧项目。
+ */
 const path = require("path");
 const fs = require("fs");
 const { loadEnv, buildRfcParams, getResponsibleUser } = require("./modules/env");

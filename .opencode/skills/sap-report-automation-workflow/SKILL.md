@@ -1,8 +1,7 @@
 ---
 name: sap-report-automation-workflow
-version: 2.0
 description: |
-  End-to-end SAP ABAP 开发对象自动化——通过 node-rfc 直连 SADT_REST_RFC_ENDPOINT 调用 RFC ADT API。支持 REPORT/CLAS/FUGR/INTF/Include 全部对象类型。FS 规范化→DDIC 元数据→技术文档→按模板写 ABAP→激活循环。所有 SAP 操作统一走 `scripts/rfc_client.js`（查询）和 `scripts/deploy_rfc.js`（部署）。语法速查 [abap-syntax-quickref.md](abap-syntax-quickref.md)，卡点速查 [troubleshooting.md](troubleshooting.md)。
+  End-to-end SAP ABAP 开发对象自动化——通过 node-rfc 直连 SADT_REST_RFC_ENDPOINT 调用 RFC ADT API。支持 REPORT/CLAS/FUGR/INTF/Include 全部对象类型。FS 规范化→DDIC 元数据→技术文档→按模板写 ABAP→激活循环。SAP 查询统一走 `scripts/rfc_client.js`；部署按对象类型走 `deploy_report.js`/`deploy_report_include.js`/`deploy_fugr.js`/`deploy_clas.js`/`deploy_intf.js`。语法速查 [abap-syntax-quickref.md](abap-syntax-quickref.md)，卡点速查 [troubleshooting.md](troubleshooting.md)。
 ---
 
 # SAP ABAP 开发对象自动化工作流（FS → 元数据 → 设计文档 → 代码 → 激活）
@@ -12,11 +11,18 @@ description: |
 ## 连接架构
 
 ```
-Claude Code → Bash → node scripts/rfc_client.js → node-rfc → SADT_REST_RFC_ENDPOINT → SAP
-Claude Code → Bash → node scripts/deploy_rfc.js → node-rfc → SADT_REST_RFC_ENDPOINT → SAP
+# 查询链路
+AI Agent → Bash → node scripts/rfc_client.js → node-rfc → SADT_REST_RFC_ENDPOINT → SAP
+
+# 部署链路（按对象类型分发）
+AI Agent → Bash → node scripts/deploy_report.js           → node-rfc → SADT_REST_RFC_ENDPOINT → SAP
+                     node scripts/deploy_report_include.js
+                     node scripts/deploy_fugr.js
+                     node scripts/deploy_clas.js
+                     node scripts/deploy_intf.js
 ```
 
-所有 SAP 操作通过统一 RFC 客户端 `scripts/rfc_client.js`（通用查询）和 `scripts/deploy_rfc.js`（部署编排）直连。不再使用 MCP/HTTP 代理中间层。
+所有 SAP 操作通过统一 RFC 客户端 `scripts/rfc_client.js`（通用查询）和 5 个类型专用部署脚本直连。`deploy_rfc.js` 保留为兼容入口。不再使用 MCP/HTTP 代理中间层。
 
 ## 阶段间强引用（元数据驱动；禁止凭语感写 Open SQL）
 
@@ -69,14 +75,14 @@ node scripts/test_rfc.js
 
 | 字段 | 必需 | 说明 |
 |------|------|------|
-| `SAP_URL` | 是 | SAP 主机地址，如 `http://10.32.21.11:8000` |
-| `SAP_CLIENT` | 是 | 客户端号（开发=200，数据=300） |
+| `SAP_URL` | 是 | SAP 主机地址，如 `http://<host>:<port>` |
+| `SAP_CLIENT` | 是 | 客户端号（如 `200`） |
 | **`SAP_SYSNR`** | **是** | RFC 实例号——**不可依赖端口推导** |
 | `SAP_USERNAME` | 是 | 开发账号 |
 | `SAP_PASSWORD` | 是 | 密码 |
 | `SAP_ROUTER` | 否 | Router 字符串（内网穿透） |
 
-**双系统配置**：开发系统 `.env`（SAP_CLIENT=200），数据系统 `.env.data`（SAP_CLIENT=300）。二者 SAP_SYSNR 通常相同。
+**双系统配置**：开发系统 `.env`，数据系统 `.env.data`。二者 SAP_SYSNR 通常相同，但 SAP_CLIENT 不同。
 
 代理写入配置文件后**不启动任何后台进程**——`rfc_client.js` 每次执行时自动连接、执行、断开。
 
@@ -259,7 +265,7 @@ FS 中每个输出列/选择条件都必须出现一行。阶段 5 前做反查�
 **必须按如下固定格式写入**（`deploy_rfc.js` 通过正则解析）：
 
 ```markdown
-| 程序名 | ZTEST101 |
+| 程序名 | ZTESTXXX |
 | 目标包 | $TMP |
 | 传输请求 | — |
 | 程序描述 | 报税取数稽核报表（EE090） |
@@ -276,21 +282,39 @@ FS 中每个输出列/选择条件都必须出现一行。阶段 5 前做反查�
 
 ### 4.0 对象类型分发
 
-| 类型 | 代码文件 | 参考模板 |
-|------|---------|---------|
-| **REPORT** | 主程序 + T01/SEL/F01 分层 | `templates/reference/ZSAP_FI244/` |
-| **CLAS** | `zcl_xxx.clas.abap`（单文件） | quickref §11 |
-| **INTF** | `zif_xxx.intf.abap` | quickref §12 |
-| **FUGR** | 函数组主文件 + 各 FM 文件 | quickref §13 |
+| 类型 | 代码文件 | 部署脚本 | 参考模板 |
+|------|---------|---------|---------|
+| **REPORT** | 主程序 + T01/SEL/F01 分层 | `deploy_report_include.js` | `templates/reference/ZSAP_FI244/` |
+| **REPORT**（无 INCLUDE） | 主程序单个文件 | `deploy_report.js` | quickref §1–6 |
+| **CLAS** | `<名>.clas.abap`（单文件） | `deploy_clas.js` | quickref §11 |
+| **INTF** | `<名>.intf.abap` | `deploy_intf.js` | quickref §12 |
+| **FUGR** | `<FM名>.fm.abap`（每 FM 一个文件） | `deploy_fugr.js` | quickref §13 |
 
 ### REPORT 生成
 
-1. 打开 `tech-design.md` → `metadata/tables/*.json` → `abap-syntax-quickref.md`
-2. INCLUDE 分层强约束：主程序 + T01/SEL/F01/O01 保持模板结构
-3. 生成前先写 `template-mapping.md`
-4. 反模式自检通过（见 §4.9）
+1. **强制先读模板**：打开 `templates/reference/ZSAP_FI244/` 下全部 4 个文件，逐行理解其结构后再写代码。禁止跳过后直接写。
+2. 打开 `tech-design.md` → `metadata/tables/*.json` → `abap-syntax-quickref.md`
+3. INCLUDE 分层强约束：主程序 + T01/SEL/F01 保持模板结构
+4. 生成前先写 `template-mapping.md`
+5. 反模式自检通过（见 §4.9）
 
-**GUI Status**：`CL_SALV_TABLE` 使用 `report = 'SAPLKKBL'`，**不能**是 `sy-repid`。
+**GUI Status 强制规则**（CL_SALV_TABLE 专用，已激活旧对象可能用`sy-repid`+`S1000`，不要模仿）：
+- `CL_SALV_TABLE` 的 `set_screen_status` 必须用 `report = 'SAPLKKBL'`，**绝不能**是 `sy-repid`
+- 必须在 `display()` 前调用，带 `pfstatus = 'STANDARD'` 和 `set_functions = gr_alv->c_functions_all`
+
+> pfstatus `'STANDARD'` 是 SAPLKKBL 自带的 GUI 状态；**不要**使用自定义 `'S1000'`，它仅适用于 `sy-repid` 自定义状态。
+
+**禁止参考 output/ 下旧对象**：已有项目可能使用旧版单文件结构，**不是**本技能规定的标准。必须严格按模板 `templates/reference/ZSAP_FI244/` 分层结构生成。
+
+**此 SAP 系统不支持**（硬约束，此 SAP 版本有限制）：
+- `DATA(...)` 内联声明：**禁止在 FORM 中使用**，必须用传统 `DATA: xxx TYPE yyy.`
+- `VALUE #( FOR ... )` 构造：**禁止使用**，必须用 `LOOP ... APPEND`
+- `FIELD-SYMBOLS`：跨不同 FORM 不得同名（此系统 FIELD-SYMBOLS 被视为程序级声明）
+
+**AUTHORITY-CHECK 必须用实际公司代码**（实战教训）：
+- `AUTHORITY-CHECK OBJECT 'F_BKPF_BUK' ID 'BUKRS' FIELD` 后面必须是**公司代码值**，不能是 `p_ryear`（会计年度）或任何非 BUKRS 字段
+- 正确做法：`LOOP AT s_bukrs` 逐个检查
+- 错误 `"An exception has occurred that was not caught"` 往往就是这里传了错误字段导致 dump
 
 ### CLASS/INTF/FUGR 生成
 
@@ -304,11 +328,20 @@ FS 中每个输出列/选择条件都必须出现一行。阶段 5 前做反查�
 
 **第零轮 — DDIC 字面值**：扫描所有字面值对照 metadata LENG。重点陷阱：`SPRAS`(LANG, LENG=1) 必须用 `'1'` 非 `'ZH'`。
 
+**第零轮(2) — 模板代码风格对齐**：逐项对照 `templates/reference/ZSAP_FI244/` 检查：
+- ✅ GUI Status：`report = 'SAPLKKBL'`（不是 `sy-repid`），`pfstatus = 'STANDARD'`（不是 `'S1000'`），在 `display()` 前调用
+- ✅ INCLUDE 分层：主程序仅 REPORT+INCLUDE+事件块，FORM 在 F01 中
+- ✅ 列格式化：用 `set_column` 辅助 FORM（非内联 `CAST cl_salv_column_table`）
+- ✅ 禁止 `DATA(...)` 在 FORM 中（必须传统 `DATA: xxx TYPE yyy.`）
+- ✅ 禁止 `VALUE #( FOR ... )` 构造（必须 `LOOP ... APPEND`）
+- ✅ FIELD-SYMBOLS 不同 FORM 不同名
+- ✅ 主程序不含除 REPORT/INCLUDE/事件块以外的代码
+
 **第一~五轮**：DB → WHERE → 内表 → 控制流 → 其他规范（无 Hard Coding/有 AUTHORITY-CHECK）。
 
 任一轮未通过 → 修正源码后再继续。
 
-**S4 门禁**：ASSIGN COMPONENT 字段名对齐 + 6 轮自检通过 + 源码结构与 template-mapping.md 一致 + **选择屏幕文本已设置**。
+**S4 门禁**：ASSIGN COMPONENT 字段名对齐 + 7 轮自检通过（含模板代码风格对齐） + 源码结构与 template-mapping.md 一致 + **选择屏幕文本已设置** + **GUI Status 用 `'SAPLKKBL'`**。
 
 ---
 ## 选择屏幕文本元素处理
@@ -392,31 +425,53 @@ S5.5=smoke-test-passed: yes/no
 ---
 ## 阶段 5：部署与激活
 
-走 `scripts/deploy_rfc.js`（直连 RFC → SADT_REST_RFC_ENDPOINT）。
+> **2026-07 重构**：部署脚本按对象类型拆分为 5 个独立脚本，每个有可重复的入参出参示例。`deploy_rfc.js` 保留为兼容入口（REPORT + 固定 INCLUDE 结构）。
 
-### 5.0 部署前复核
+### 5.0 部署脚本选型（按对象类型分发）
+
+| 对象类型 | 脚本 | 源码文件约定 |
+|---------|------|------------|
+| **REPORT**（无 INCLUDE） | `node scripts/deploy_report.js <名>` | `output/<名>/abap/<名>.abap` |
+| **REPORT + INCLUDE** | `node scripts/deploy_report_include.js <名>` | 主程序 + 从源码自动发现 INCLUDE 名 |
+| **FUGR + FM** | `node scripts/deploy_fugr.js <名>` | `output/<名>/abap/<FM名>.fm.abap` |
+| **CLAS** | `node scripts/deploy_clas.js <名>` | `output/<名>/abap/<名>.clas.abap` |
+| **INTF** | `node scripts/deploy_intf.js <名>` | `output/<名>/abap/<名>.intf.abap` |
+| **REPORT**（固定 T01/SEL/F01/O01） | `node scripts/deploy_rfc.js <名>` | 兼容旧模板 |
+
+### 5.0.1 部署前复核
 
 1. 阶段 1.5 的 `--search` 结果已记录，程序名一致
-2. Include 名复核
-3. `stage-gate.md` 中 S3.6=yes
+2. `stage-gate.md` 中 S3.6=yes
+3. `deployment-config.md` 已按固定表格格式生成
 
-### 5.1 脚本部署
+### 5.1 标准流程（所有脚本通用）
 
-```bash
-node scripts/deploy_rfc.js <program>
+每个脚本内部执行：创建对象 → Lock → 上传源码 → Unlock → 激活 → 验证版本。
+
+**关键行为规则**（2026-07 实战验证）：
+
+| 规则 | 说明 |
+|------|------|
+| **INCLUDE 自动发现** | `deploy_report_include.js` 从主程序源码 `INCLUDE xxx.` 指令提取 INCLUDE 名，不限死 T01/SEL/F01 |
+| **FM 必须入激活列表** | 只激活 FUGR 不会激活其 FM。`deploy_fugr.js` 自动把 FUGR + 所有 FM 放入一个 activation 请求 |
+| **CLAS/INTF 走 OO URI** | CLAS 激活 URI 是 `/oo/classes/`，INTF 是 `/oo/interfaces/`，不能用 `activateObjects()` 的 programs URI |
+| **已存在 = 405 或 409** | 此系统"已存在"返回 405，不是标准 409。所有新脚本兼容两种 |
+| **激活响应体可能为空** | HTTP 200 + 空 body = 激活成功（此系统行为） |
+| **Syntax check 405** | 此系统不支持独立语法检查，激活时验证语法 |
+
+### 5.1.1 部署后验证（所有脚本自动执行）
+
+每个脚本激活后自动 GET 对象元数据，提取 `adtcore:version` 字段确认 `active`。结果以 JSON 输出：
+
+```json
+{"status":"success","objects":[{"name":"ZTEST006","type":"PROG/P","version":"active"},...],"errors":[]}
 ```
-
-自动完成：创建主程序 → Lock → 上传源码 → 创建 Include → 逐个 Lock/Upload/Unlock → 语法检查 → 激活 → 检查激活结果。
-
-- 语法检查有错误 → **立即停止**，禁止激活
-- 激活结果必须解析 `<msg type="E|A">`、`<atom:entry>`、`<entry>` 三种格式
-- HTTP 200 ≠ 成功——必须解析响应体
 
 ### 5.2 锁管理
 
 Lock Handle 持久化到 `.locks/<name>.json`。残留锁用 `scripts/release_locks.js` 清理。
 
-**S5 门禁**：部署成功，激活无错误。
+**S5 门禁**：部署成功，所有对象 version=active。
 
 ---
 ## 阶段 5.5：冒烟测试（激活后强制，不可跳过）
@@ -427,10 +482,12 @@ Lock Handle 持久化到 `.locks/<name>.json`。残留锁用 `scripts/release_lo
 
 1. **禁止**在 `ZREPORT_EXEC_VERIFY` FM 不存在或不返回 `EV_SUCCESS='X'` 时标记 S5.5=yes
 2. **禁止**仅跑一次 `verify_report.js` 看返回码即通过
-3. **禁止**源表数据全零时不标注"数据全零，计算逻辑待补充验证"即通过
-4. **禁止**仅比对金额列；描述列（TXT50/ZFZHS/ZFZTX/ZYJKM）也必须逐列比对
-5. **必须**≥2 个不同公司代码、≥3 组参数组合、≥8 个金额列逐列 0.01 容差匹配
-6. `smoke-test.md` 落盘路径为 `output/<程序>/smoke-test.md`（**非** docs/ 子目录）
+3. **禁止** `smoke-test.md` 的数值来源于**推测/人工伪造**——所有数必须来自 `verify_report.js` 真实返回的 `EV_DATA_JSON`；
+   伪造数据是严重违规，发现后必须重写并道歉
+4. **禁止**源表数据全零时不标注"数据全零，计算逻辑待补充验证"即通过
+5. **禁止**仅比对金额列；描述列（TXT50/ZFZHS/ZFZTX/ZYJKM）也必须逐列比对
+6. **必须**≥2 个不同公司代码、≥3 组参数组合、≥8 个金额列逐列 0.01 容差匹配
+7. `smoke-test.md` 落盘路径为 `output/<程序>/smoke-test.md`（**非** docs/ 子目录）
 
 ### 5.5.1 数据抽样（fetch_table.js 统一入口——DDIC 端点，WHERE 可靠）
 
@@ -470,6 +527,20 @@ node scripts/verify_report.js <程序名> P_xxx=<值> "S_xxx=低-高,低-高"
 **前提**：`ZREPORT_EXEC_VERIFY` FM 已在 SAP 开发系统部署。
 `verify_report.js` 调用 FM → SUBMIT 报表 → 捕获 SALV 数据 → 返回 JSON。
 
+### 5.5.3a verify_report.js 失败排查（实战教训）
+
+`verify_report.js` 失败时，**不要先怀疑连接**——同一个 SAP 实例（同一 `ashost+sysnr`）下的不同客户端必定同时连通或同时不通。
+错误 `"An exception has occurred that was not caught"` 是报表程序本身的 ABAP 异常（dump 或 TYPE E 消息），而非 RFC 连接问题。
+
+| 症状 | 最可能根因 | 检查方法 |
+|------|-----------|---------|
+| `An exception has occurred that was not caught` | 报表内部 ABAP dump：AUTHORITY-CHECK 用错字段、消息 TYPE 'E'、数据转换错 | 检查 F01 逻辑，特别是 authority_check 是否传了正确字段 |
+| `Fill all required fields` / 参数类 404 | ZREPORT_EXEC_VERIFY 的 IT_RSPARAMS 结构不对 | 直接 node-rfc 传参测试（跳过 verify_report.js 参数解析层） |
+| `ZREPORT_EXEC_VERIFY` FM 404 | FM 未部署 | 检查 docs/ 下部署记录 |
+| RFCEXEC 相关错误 | 网络/路由/NW-RFC-SDK | 先跑 `node scripts/test_rfc.js` 确认客户端连通，再跑 `node scripts/test_rfc.js .env.data` 确认数据系统连通 |
+
+**关键原则**：先最小化——用直接 node-rfc 调用 FM 排除脚本层问题，再逐层向上排查。
+
 ### 5.5.4 逐字段比对（8 金额列 + 5 描述列）
 
 ```
@@ -505,7 +576,12 @@ node scripts/verify_report.js <程序名> P_xxx=<值> "S_xxx=低-高,低-高"
 | 2 | **拉 DD03L** | `node scripts/rfc_fetch_ddic.js --env=.env.data <TABNAME> output/<prog>/metadata/tables/` |
 | 2.5 | 主表 COUNT | `node scripts/rfc_client.js --env=.env.data --sql "SELECT COUNT(*) AS CNT FROM <主表>" --table <主表>` |
 | 3.6 | 验证包 | `node scripts/rfc_client.js --search "<包名>" --type DEVC` |
-| 5 | **部署** | `node scripts/deploy_rfc.js <程序名>` |
+| 5 | **部署 REPORT**（单文件） | `node scripts/deploy_report.js <程序名>` |
+| 5 | **部署 REPORT+INCLUDE** | `node scripts/deploy_report_include.js <程序名>` |
+| 5 | **部署 FUGR+FM** | `node scripts/deploy_fugr.js <函数组名>` |
+| 5 | **部署 CLAS** | `node scripts/deploy_clas.js <类名>` |
+| 5 | **部署 INTF** | `node scripts/deploy_intf.js <接口名>` |
+| 5 | 部署（兼容旧模板） | `node scripts/deploy_rfc.js <程序名>` |
 | 5.5 | **取数（DDIC 端点）** | `node scripts/fetch_table.js --table=<T> --where="<cond>" --fields=<f> --rows=<n>` |
 | 5.5 | 数据采样（兼容） | `node scripts/data_sampler.js "--table=<T>" "--where=<cond>" "--rows=100"` |
 | 5.5 | **报表校验** | `node scripts/verify_report.js <程序名> P_xxx=<值> "S_xxx=低-高"` |
@@ -553,6 +629,7 @@ FS 变更时禁止默认全量重跑。按变更类型选择恢复起点：
 ---
 ## 延伸阅读
 
+- **部署脚本**：[deploy_report.js](../../scripts/deploy_report.js) · [deploy_report_include.js](../../scripts/deploy_report_include.js) · [deploy_fugr.js](../../scripts/deploy_fugr.js) · [deploy_clas.js](../../scripts/deploy_clas.js) · [deploy_intf.js](../../scripts/deploy_intf.js) — 每种对象类型独立脚本，含可重复入参出参示例
 - **ABAP 语法速查**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 阶段 4 必备
 - **冒烟测试范式**：[smoke-test-procedure.md](smoke-test-procedure.md) — 阶段 5.5 强制参照
 - **卡点速查**：[troubleshooting.md](troubleshooting.md) — 受阻时先查
@@ -576,8 +653,13 @@ FS 变更时禁止默认全量重跑。按变更类型选择恢复起点：
 | SQL 查询（自由） | POST | `/sap/bc/adt/datapreview/freestyle?rowNumber=<n>` |
 | 读取源码 | GET | `/sap/bc/adt/programs/programs/{name}/source/main` |
 | 创建程序 | POST | `/sap/bc/adt/programs/programs` |
+| 创建 Include | POST | `/sap/bc/adt/programs/includes` |
+| 创建类 | POST | `/sap/bc/adt/oo/classes` |
+| 创建接口 | POST | `/sap/bc/adt/oo/interfaces` |
+| 创建函数组 | POST | `/sap/bc/adt/functions/groups` |
+| 创建 FM | POST | `.../fmodules`（命名空间 `fmodules`，非 `groups`） |
 | Lock | POST | `{objectUri}?_action=LOCK&accessMode=MODIFY` |
-| 激活 | POST | `/sap/bc/adt/activation?method=activate&preauditRequested=true` |
+| 激活 | POST | `/sap/bc/adt/activation?method=activate&preauditRequested=false` |
 
 ### 对象类型映射
 
@@ -595,13 +677,19 @@ FS 变更时禁止默认全量重跑。按变更类型选择恢复起点：
 |------|------|------|
 | `test_rfc.js` DLL 加载失败 | SAPNWRFC_HOME/PATH 未设 | 设置 Windows 系统环境变量，完全重启终端 |
 | RFC 连接超时 | Router/防火墙/端口 | 检查 VPN，核对 SAP_ROUTER |
-| 创建报 409 | 程序已存在 | **必须问用户**，禁止自动跳过 |
+| 创建报 **409** | 程序已存在 | **必须问用户**，禁止自动跳过 |
+| 创建报 **405**（非 409） | 此系统"已存在"返回 405 而非 409 | 脚本兼容处理：405+body 含 AlreadyExists |
+| 激活 HTTP 200 但空 body | 此系统激活成功不返回 XML | 正常行为。部署后 GET 元数据确认 `version="active"` |
+| 激活 HTTP 200 但 FM 仍 inactive | **只激活了 FUGR 没激活 FM** | FM 必须放入同一个 activation 请求 |
+| CLAS/INTF 激活报 Internal error 8 | 用了 programs URI 而非 OO URI | `deploy_clas.js`/`deploy_intf.js` 使用正确的 `/oo/classes/` `/oo/interfaces/` URI |
+| FM 创建报 400 "期望的是元素 fmodules" | 命名空间错误（用了 `groups` 而非 `fmodules`） | FM XML 必须用 `http://www.sap.com/adt/functions/fmodules` |
+| 激活报错对象名为 "unknown" | 错误解析器无法从响应中提取对象名 | 查看完整 XML 响应中的 `objDescr`/`objName` 属性 |
+| Syntax check 报 405 | 此系统不支持独立语法检查 | 依赖激活时验证语法 |
 | `freestyle` 返回 400 | 系统不支持该端点 | 改用 `--table <T>` 走 `ddic` 端点 |
-| 激活 HTTP 200 但未激活 | 解析器漏掉 `<msg type="E">` | 三种错误格式均需匹配 |
 
 ### 迁移到其他环境
 
-复制 Skill 目录到目标仓库的 `.claude/skills/sap-report-automation-workflow/`。首次触发时代理按阶段 0 自动验证 RFC 环境、引导用户创建 `.env`。需用户安装 Node.js ≥ 18 + NW RFC SDK。
+复制 Skill 目录到目标仓库的 `.opencode/skills/sap-report-automation-workflow/`。首次触发时代理按阶段 0 自动验证 RFC 环境、引导用户创建 `.env`。需用户安装 Node.js ≥ 18 + NW RFC SDK。
 
 ### INCLUDE 部署缺陷与 FUGR/FM 支持
 
