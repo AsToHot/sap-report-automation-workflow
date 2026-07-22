@@ -54,12 +54,45 @@
 
 ## 2. 部署激活
 
-→ 完整流程见 SKILL.md 阶段 5（`deploy_rfc.js` 编排）
+→ 完整流程见 SKILL.md 阶段 5（按对象类型选脚本）
 → 故障速查表见 SKILL.md 附录「故障排查速查」
 → INCLUDE 类型错位根因见 [docs/rfc-adt-bridge.md](../../docs/rfc-adt-bridge.md)「INCLUDE 部署已知缺陷」
 
+### 2.0 部署脚本选型（2026-07 重构）
+
+| 对象类型 | 脚本 |
+|---------|------|
+| REPORT（无 INCLUDE） | `deploy_report.js <名>` |
+| REPORT + INCLUDE | `deploy_report_include.js <名>`（从源码自动发现 INCLUDE 名） |
+| FUGR + FM | `deploy_fugr.js <名>`（FM 源文件 `.fm.abap`） |
+| CLAS | `deploy_clas.js <名>`（源文件 `.clas.abap`） |
+| INTF | `deploy_intf.js <名>`（源文件 `.intf.abap`） |
+| 兼容旧模板 | `deploy_rfc.js <名>`（固定 T01/SEL/F01/O01） |
+
+### 2.1 分 INCLUDE 部署失败的已知根因
+
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| `readFileSync` ENOENT crash | 旧 `deploy_rfc.js` 硬编码 T01+SEL 必须存在 | 用 `deploy_report_include.js`（从源码 `INCLUDE xxx.` 指令自动发现） |
+| INCLUDE 创建成功但激活后 inactive | **旧脚本可能漏掉部分 INCLUDE 进激活列表**（`o01Src=""` 被 falsy 过滤） | 新脚本确保主程序引用的每个 INCLUDE 都进入 activation 请求 |
+| FM 激活后仍 inactive | **只激活了 FUGR 没激活 FM**。`deploy_rfc.js` 只支持 REPORT 类型 | 用 `deploy_fugr.js`——自动把 FUGR+所有 FM 放入同一 activation |
+| CLAS 激活报 Internal error 8 | `activateObjects()` 只识 P/I 类型，对 CLAS 生成错的 programs URI | 用 `deploy_clas.js`（直接构建 `/oo/classes/` URI） |
+| 创建返回 405 而非 409 | 此 SAP 系统的"已存在"响应码 | 所有新脚本兼容 405+409 |
+| 激活返回 HTTP 200 + 空 body | 此系统激活成功不返回 XML | 新脚本激活后 GET 元数据确认 `version="active"` |
+
+### 2.2 部署后验证
+
+每个新脚本激活后自动验证：GET 对象元数据 → 提取 `adtcore:version` → JSON 输出。示例：
+
+```json
+{"status":"success","objects":[
+  {"name":"ZTEST006","type":"PROG/P","version":"active"},
+  {"name":"ZTEST006T01","type":"PROG/I","version":"active"}
+],"errors":[]}
+```
+
 **独有补丁**：
-- 源码必须写入 `output/<obj>/abap/sources/`，`deploy_rfc.js` 读这个目录
+- 源码写入 `output/<obj>/abap/`（主程序 `.abap`，INCLUDE `<INC名>.abap`，FM `<FM名>.fm.abap`，CLAS `<名>.clas.abap`，INTF `<名>.intf.abap`）
 
 ---
 

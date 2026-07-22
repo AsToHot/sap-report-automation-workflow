@@ -75,7 +75,7 @@ try {
     console.error('>>> SOLUTION (Windows):');
     console.error('    1. Set Windows SYSTEM Environment Variable SAPNWRFC_HOME =', path.resolve(__dirname, '..', 'NW-RFC-SDK', 'nwrfcsdk'));
     console.error('    2. Add %SAPNWRFC_HOME%\\lib to Windows SYSTEM PATH');
-    console.error('    3. RESTART your terminal / VS Code / Claude Code completely');
+    console.error('    3. RESTART your terminal / OpenCode / IDE completely');
     console.error('    4. Re-run this script');
     console.error('');
     console.error('>>> IMPORTANT: Git Bash "export PATH=..." does NOT affect Windows native processes like node.exe!');
