@@ -304,7 +304,7 @@ output/<object>/
 ## 已知限制
 
 - **文本元素 / GUI Status**：RFC ADT 通道不支持 SE32/SE41。GUI Status 使用 `report = 'SAPLKKBL'` 标准工具栏。选择屏幕文本通过运行时设置：`%_xxx_%_app_%-text` 直接赋值（优先），或 `SELECTION_TEXTS_MODIFY` FM（备选）
-- **FM 参数格式**：必须用 ABAP 原生声明，`*"*"` 注释块被 RFC ADT 拒绝
+- **FM 参数格式**：必须用 ABAP 原生声明，`*"*'` 注释块被 RFC ADT 拒绝
 - **`freestyle` SQL 端点**：部分 SAP 版本返回 400，用 `--table <T>` 走 `ddic` 端点兜底
 
 ## GitHub 推送准则
