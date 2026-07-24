@@ -3,13 +3,13 @@
 ## ABAP 语法参考源（推荐）
 
 - **首选**：[SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets) — SAP 官方示例库。37 个主题速查表涵盖内表、Open SQL、类型系统、OO、设计模式、选择屏幕、WHERE 条件、性能优化、异常处理等全部主题。
-- **本 Skill 内置速查**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 精选最高频模式，阶段 4 代码生成的语法约束。
+- **本 Skill 内置速查**：[abap-syntax-quickref.md](abap-syntax-quickref.md) — 精选最高频模式，S9 代码生成的语法约束。
 - 各阶段 cheat sheet 对应：
-  - 阶段 4（REPORT）：01_Internal_Tables, 03_ABAP_SQL, 16_Data_Types_and_Objects
-  - 阶段 4（CLASS）：04_ABAP_Object_Orientation, 34_OO_Design_Patterns, 27_Exceptions
-  - 阶段 3（技术设计）：31_WHERE_Conditions, 03_ABAP_SQL
-  - 选择屏幕设计：20_Selection_Screens_Lists
-  - 性能审查：32_Performance_Notes
+  - S9（REPORT）：01_Internal_Tables, 03_ABAP_SQL, 16_Data_Types_and_Objects
+  - S9（CLASS）：04_ABAP_Object_Orientation, 34_OO_Design_Patterns, 27_Exceptions
+  - S3（DDIC 元数据）：31_WHERE_Conditions, 03_ABAP_SQL
+  - S6/S9（选择屏幕设计）：20_Selection_Screens_Lists
+  - S11/S9（性能审查）：32_Performance_Notes
 
 ## 与 Eclipse ADT 的关系
 
@@ -61,7 +61,7 @@ node scripts/rfc_client.js --source "/sap/bc/adt/ddic/tables/bkpf/source/main"
   3. 简单 `<entry>` 标签
   - **禁止**仅匹配 `<entry>` 就判定成功
 - 语法检查端点返回 405 → 标记 `unavailable`，激活阶段兜底验证
-- 每次失败追加到 `output/<program>/docs/smoke-test.md`
+- 每次失败追加到 `output/<program>/smoke-test.md`
 
 ## RFC ADT 常用端点
 
@@ -84,14 +84,20 @@ node scripts/rfc_client.js --source "/sap/bc/adt/ddic/tables/bkpf/source/main"
 
 ## 脚本库参考
 
-所有 SAP 查询统一走 `scripts/rfc_client.js`，部署走 `scripts/deploy_rfc.js`。
+所有 SAP 查询统一走 `scripts/rfc_client.js`；部署按对象类型走 `deploy_report.js`/`deploy_report_include.js`/`deploy_fugr.js`/`deploy_clas.js`/`deploy_intf.js`（`deploy_rfc.js` 保留为旧模板兼容入口）。
 
 ### 核心脚本
 
 | 脚本 | 场景 |
 |------|------|
 | `scripts/rfc_client.js` | **统一 SAP 客户端**：discovery / search / SQL / source |
-| `scripts/deploy_rfc.js` | 主部署编排（创建→Lock→上传→语法检查→激活） |
+| `scripts/detect_abap_version.js` | 探测目标 SAP 系统的 ABAP release，决定 S9 可用语法 |
+| `scripts/deploy_report.js` | 部署 REPORT（单文件） |
+| `scripts/deploy_report_include.js` | 部署 REPORT + INCLUDE（从源码自动发现 INCLUDE） |
+| `scripts/deploy_fugr.js` | 部署 FUGR + FM |
+| `scripts/deploy_clas.js` | 部署 CLAS |
+| `scripts/deploy_intf.js` | 部署 INTF |
+| `scripts/deploy_rfc.js` | 兼容旧模板（固定 T01/SEL/F01/O01） |
 | `scripts/verify_report.js` | 冒烟测试：多组参数执行报表并比对 |
 | `scripts/test_rfc.js` | RFC 环境诊断（DLL + 连接） |
 | `scripts/release_locks.js` | 应急释放 SAP 锁 |

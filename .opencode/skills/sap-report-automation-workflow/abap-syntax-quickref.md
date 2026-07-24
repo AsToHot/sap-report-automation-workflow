@@ -1,8 +1,33 @@
 # ABAP 语法速查（报表开发 · 多版本兼容）
 
 > 本速查覆盖 **ECC 6.0 → S4HANA → Cloud** 全谱系。每个模式标注最低版本要求。
-> 图标：🔵 = ABAP 7.00+（全系可用）  🟢 = 7.40+（ECC EHP7/8、S4HANA）  🟠 = 7.50+（S4HANA 1709+）  🔴 = Cloud only
-> 阶段 4 写代码时：打开本文件对照，禁止凭记忆写语法。完整语法追查 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
+> S9 写代码前**必须**已执行 `node scripts/detect_abap_version.js` 并取得 `allowedSyntax`；写代码时只准使用 allowedSyntax 包含的图标级别。
+> 禁止凭记忆写语法；拿不准时追查官方 [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)。
+
+## 版本图标与系统映射
+
+| 图标 | 最低 Release | 典型系统 | 关键新语法 |
+|------|-------------|---------|-----------|
+| 🔵 | ABAP 7.00+ | ECC 6.0 / EHP0–EHP6 | 显式 `DATA`、标准 `READ TABLE`、传统 `LOOP`、`SELECT ... INTO TABLE` |
+| 🟢 | ABAP 7.40+ | ECC EHP7/8、S4HANA 1511/1610 | 内联声明 `DATA(...)`、`VALUE #()`、`CORRESPONDING`、`|字符串模板|`、表表达式 `itab[...]` |
+| 🟠 | ABAP 7.50+ | S4HANA 1709+ | `INNER JOIN @itab`、`CTE WITH`、更多 Open SQL 表达式 |
+| 🔴 | Cloud only | BTP ABAP Environment / Steampunk | Released APIs、RAP、EML 等，**本地 ECC/S4 不可直接用** |
+
+## 由版本探测结果驱动的语法白名单
+
+S0 探测结果 `versionTier` 与可用图标对照：
+
+| `versionTier` | 含义 | `allowedSyntax` | S9 行为约束 |
+|---------------|------|-----------------|-----------------|
+| `abap_cloud` | Cloud / Steampunk | 🔵🟢🟠🔴 | 可用现代语法，但必须查 released APIs；禁止本地-only 的 dynpro/ALV 旧模式 |
+| `s4hana_modern` | S4HANA 1511/1610/1709+（ABAP 7.50+） | 🔵🟢🟠 | 可用 🟢 与 🟠；需要 🔴 的语法必须改用 🔵/🟢 等价写法 |
+| `s4hana_early` | ECC 6.0 EHP7/EHP8（ABAP 7.40） | 🔵🟢 | **禁用 🟠/🔴**；例如不能用 `JOIN @itab`、CTE `WITH` |
+| `ecc_legacy` | ECC 6.0 EHP0–EHP6 或探测失败 | 🔵 | **只准用最保守语法**；禁用内联声明、`VALUE`、`CORRESPONDING`、字符串模板、表表达式 |
+
+**硬规则**：
+- `detect_abap_version.js` 返回 `sapRelease` 为 `null` 或 `< 700` 时，**强制按 `ecc_legacy` 处理**。
+- 任何语法示例前的图标若不在当前 `allowedSyntax` 中，必须换用 🔵 写法或明确报错给用户。
+- S9 生成的 ABAP 源码必须在 `stage-gate.md` 中记录 `S9=used-syntax-icons: 🔵🟢` 等级别，便于审计。
 
 ---
 
@@ -564,7 +589,7 @@ LOOP AT gt_header ASSIGNING <fs_h>.
 ENDLOOP.
 ```
 
-### 代码生成后逐项自查（阶段 4 末强制）
+### 代码生成后逐项自查（S9 末强制）
 
 **DB 层**：
 - [ ] 所有 `SELECT` 都有 WHERE 条件且字段列表明确（非 `*` 除非确需全字段）

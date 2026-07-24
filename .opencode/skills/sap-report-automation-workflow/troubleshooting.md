@@ -21,10 +21,10 @@
 | `rfc_client.js --sql ... --table <T>` 查业务数据 | `--env=.env.data`（数据系统 300） | 查业务数据 |
 | `rfc_client.js --search` 查 ABAP 对象 | 默认 `.env`（开发系统 200） | 查开发对象 |
 | `rfc_fetch_ddic.js <T>` 拉元数据 | `--env=.env.data`（数据系统 300） | DDIC 定义 200/300 一致，有数据处更快 |
-| `deploy_rfc.js <prog>` 部署 | 默认 `.env`（开发系统 200） | 部署到开发机 |
-| `verify_report.js` 冒烟测试 | 默认 `.env.data`（数据系统 300） | 执行业务数据校验 |
+| `deploy_report.js` / `deploy_report_include.js` / `deploy_fugr.js` / `deploy_clas.js` / `deploy_intf.js` 部署 | 默认 `.env`（开发系统） | 部署到开发机 |
+| `verify_report.js` 冒烟测试 | 默认 `.env.data`（数据系统） | 执行业务数据校验 |
 
-→ 完整规则见 [SKILL.md §0.5.5](SKILL.md)
+→ 完整规则见 [SKILL.md S0](SKILL.md)
 
 ---
 
@@ -32,7 +32,7 @@
 
 **唯一可靠路径**：`runQuery → DD03L`。`getObjectSource` 对 DDIC 表永远返回 404。
 
-→ 完整规则见 SKILL.md 阶段 2（`DD03L 单表串行 + COUNT 校验`）
+→ 完整规则见 SKILL.md S3（`DD03L 单表串行 + COUNT 校验`）
 → 连接错误恢复：0.4.1 业务工具运行时恢复流程
 
 **独有补丁**：
@@ -48,13 +48,13 @@
 | RPMAX='003' 的行只有 HSL03 有值 | **每行的 16 个 HSL 列都可能非零**（不同 OBJNR 切片贡献不同期间金额） |
 | 用 CASE RPMAX 取单列即可 | **必须遍历所有 16 列**，全量累加 |
 
-**兜底规则**：阶段 2 拉完 DDIC 后，**必须**用 `rfc_client.js --env=.env.data` 在数据系统(300)上取一行真实数据（含全部金额列），确认数据分布方式，再写阶段 3 技术设计和阶段 4 代码。**禁止凭 DDIC 字段名推断数据模型。**
+**兜底规则**：S3 拉完 DDIC 后，**必须**用 `rfc_client.js --env=.env.data` 在数据系统上取一行真实数据（含全部金额列），确认数据分布方式，再写 S6 技术设计和 S9 代码。**禁止凭 DDIC 字段名推断数据模型。**
 
 ---
 
 ## 2. 部署激活
 
-→ 完整流程见 SKILL.md 阶段 5（按对象类型选脚本）
+→ 完整流程见 SKILL.md S10（按对象类型选脚本）
 → 故障速查表见 SKILL.md 附录「故障排查速查」
 → INCLUDE 类型错位根因见 [docs/rfc-adt-bridge.md](../../docs/rfc-adt-bridge.md)「INCLUDE 部署已知缺陷」
 
@@ -98,7 +98,7 @@
 
 ## 3. 代码生成易错点
 
-→ 反模式自检完整清单见 SKILL.md §4.9（6 轮 字面值类型→DB→WHERE→内表→控制流→其他）
+→ 反模式自检完整清单见 SKILL.md S9「通用反模式自检（6 轮，强制）」（字面值类型→DB→WHERE→内表→控制流→其他）
 → 语法参考见 `abap-syntax-quickref.md`
 
 ### 3.0 字面值长度越界（两次实战 Dump，最高优先级）
@@ -120,7 +120,7 @@ AND skat~spras = @sy-langu
 
 **预判**：写完代码后执行 `grep -rn "'ZH'\|'EN'\|'DE'" output/<program>/abap/`，命中 → 对照 metadata JSON 检查 LENG。
 
-**预防**：SKILL.md §4.9 新增「第零轮：DDIC 字面值类型长度」——代码写完后第一件事就是逐字面值对照 metadata LENG，通过才进入后续五轮。
+**预防**：SKILL.md S9「通用反模式自检」新增「第零轮：DDIC 字面值类型长度」——代码写完后第一件事就是逐字面值对照 metadata LENG，通过才进入后续五轮。
 
 **独有补丁**：
 
@@ -139,7 +139,7 @@ AND skat~spras = @sy-langu
 
 **预判**：
 ```bash
-# 阶段 4 写完代码后，在 abap 目录执行：
+# S9 写完代码后，在 abap 目录执行：
 grep -n "ASSIGN COMPONENT" *.abap
 # → 对每个 ASSIGN COMPONENT，打开对应 metadata JSON 检查拼接变量的 DATATYPE 和 LENG
 # → 如果是 NUMC，确认拼接后的字段名字符数 == 结构体字段名字符数
@@ -180,13 +180,13 @@ lv_name = |HSL{ iv_period }|.
 - `Connection refused` → SAP 实例未监听 RFC 端口，检查 `SAP_SYSNR`（**不可依赖端口推导**）
 - `Router` 相关错误 → SAP_ROUTER 配置错误或 VPN 未连接
 
-→ 自动安装流程见 [SKILL.md 阶段 0](SKILL.md)
+→ 自动安装流程见 [SKILL.md S0](SKILL.md)
 
 ---
 
 ## 一句话总结
 
-**DDIC 用 rfc_client.js --sql --env=.env.data 逐表串行，结果写文件不占上下文。部署走 deploy_rfc.js，代码字段从契约来不用猜。**
+**DDIC 用 rfc_client.js --sql --env=.env.data 逐表串行，结果写文件不占上下文。部署按对象类型选 deploy_report.js / deploy_report_include.js / deploy_fugr.js / deploy_clas.js / deploy_intf.js，代码字段从契约来不用猜。**
 
 ---
 
@@ -233,7 +233,7 @@ FS 文档中两处字段名与实际 DDIC 不符：
 - `ZSAP_FI054-KONT_FY` → 实际字段名 **`HKONT_FY`**
 - `SKA1-KTOPL="SKA1"` → **不存在此科目表**，实际为 `KTOPL='EEKA'`（与控制范围 KOKRS 一致）
 
-**教训**：阶段 2.1 FS↔DDIC 验证不可跳过，不能盲信 FS 字段名。
+**教训**：S4 FS↔DDIC 验证不可跳过，不能盲信 FS 字段名。
 
 ### 5.6 FOR ALL ENTRIES 跨表 LENG 不匹配
 
@@ -251,4 +251,4 @@ TYPES: BEGIN OF tys_map,
        END OF tys_map.
 ```
 
-参考模板 ZSAP_FI244 的做法：显式 `prctr TYPE cepc-khinr`。
+内部字段长度对齐的做法：显式 `prctr TYPE cepc-khinr`。`

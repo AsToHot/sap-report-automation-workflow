@@ -88,7 +88,7 @@ echo "SELECT * FROM TADIR" | node scripts/rfc_client.js --env=.env.data \
 | 读取函数组源码 | GET | `/sap/bc/adt/functions/groups/{name}/source/main` | |
 | 未激活对象列表 | GET | `/sap/bc/adt/inactiveobjects` | |
 
-### 操作类（deploy_rfc.js 内部使用）
+### 操作类（部署脚本内部使用）
 
 | 操作 | 方法 | URI | Content-Type |
 |------|------|-----|-------------|

@@ -1,4 +1,4 @@
-# SAP 连接操作参考手册 — 入参/出参完整示例
+﻿# SAP 连接操作参考手册 — 入参/出参完整示例
 
 所有示例均通过实际 SAP 系统（开发 200 + 数据 300）验证，时间戳 2026-06-24。
 
@@ -291,28 +291,26 @@ node scripts/rfc_client.js --source "/sap/bc/adt/oo/classes/zcl_dao/source/main"
 
 ---
 
-## 8. 部署 — `deploy_rfc.js`
+## 8. 部署（按对象类型选脚本）
 
-```bash
-node scripts/deploy_rfc.js <程序名>
-```
-
-**入参**：程序名（如 `ZSAP_FI086`），位置参数 1
+| 对象类型 | 命令 | 说明 |
+|---------|------|------|
+| REPORT（单文件） | `node scripts/deploy_report.js <程序名>` | 主程序 `.abap` |
+| REPORT + INCLUDE | `node scripts/deploy_report_include.js <程序名>` | 自动从源码 `INCLUDE` 指令发现 INCLUDE |
+| FUGR + FM | `node scripts/deploy_fugr.js <函数组名>` | FM 源文件 `.fm.abap` |
+| CLAS | `node scripts/deploy_clas.js <类名>` | 源文件 `.clas.abap` |
+| INTF | `node scripts/deploy_intf.js <接口名>` | 源文件 `.intf.abap` |
+| 兼容旧模板 | `node scripts/deploy_rfc.js <程序名>` | 固定 T01/SEL/F01/O01 结构 |
 
 **前置条件**：
-- `output/<程序名>/abap/` 存在，含 `<程序名>.abap` + `<程序名>T01.abap` + `<程序名>SEL.abap` + `<程序名>F01.abap`
-- `output/<程序名>/docs/deployment-config.md` 含目标包和传输请求
+- `output/<程序名>/abap/` 存在对应源文件
+- `output/<程序名>/docs/deployment-config.md` 含目标包和传输请求（格式见 [troubleshooting.md](troubleshooting.md) §5.1）
 
-**行为流程**：
-1. `[OK] RFC connected` — 建立 RFC 连接
-2. 创建主程序（`POST /sap/bc/adt/programs/programs`）→ Lock → 上传源码
-3. 创建 Include → 逐个 Lock/Upload/Unlock
-4. 语法检查（`POST .../source/main?method=check`）
-5. 激活（`POST /sap/bc/adt/activation`）→ 检查激活结果
-6. 输出 `SUCCESS` 或 `FAILED`
-
-**成功输出**：`... DEPLOY SUCCESS`
-**失败输出**：`[FATAL] ...` + 错误详情（语法错误含行号）
+**行为流程**（各脚本统一）：
+1. 创建对象 → Lock → 上传源码
+2. 语法检查（`POST .../source/main?method=check`）
+3. 激活（`POST /sap/bc/adt/activation`）→ GET 元数据确认 `version="active"`
+4. 输出 JSON 结果
 
 ---
 
@@ -337,7 +335,7 @@ node scripts/verify_report.js --env=.env.data ZTEST001 P_BUKRS=6030
 | `S_xxx=低-高` | SELECT-OPTIONS | 区间参数 (OPTION=BT)，逗号分隔多组 |
 | `--env=` | 可选 | 配置文件（默认 `.env.data`） |
 
-**前置**：数据系统上已部署 `ZREPORT_EXEC_VERIFY` FM（源码见 `docs/ZREPORT_EXEC_VERIFY.txt`）
+**前置**：数据系统上已部署 `ZREPORT_EXEC_VERIFY` FM（源码见 `../../docs/ZREPORT_EXEC_VERIFY.txt`）
 
 **出参**：每组参数的行数、金额合计、前 8 行明细（动态列展示）
 
@@ -393,14 +391,15 @@ node scripts/rfc_client.js POST "/sap/bc/adt/datapreview/ddic?rowNumber=5&ddicEn
 |------|------|------|------|
 | S0 | 环境诊断 | `node scripts/test_rfc.js` | — |
 | S0 | 双系统连通 | `node scripts/rfc_dual_check.js` | 双系统 |
-| S0 | 权限探测 | `node scripts/rfc_client.js --sql "SELECT COUNT(*) AS CNT FROM TADIR WHERE PGMID EQ 'R3TR'" --table TADIR` | 200 开发 |
-| S1.5 | 查对象存在 | `node scripts/rfc_client.js --search "<OBJNAME>"` | 200 开发 |
-| S2 | **拉 DDIC** | `node scripts/rfc_fetch_ddic.js --env=.env.data <T> output/<prog>/metadata/tables/` | 300 数据 |
-| S2.5 | 主表 COUNT | `node scripts/rfc_client.js --env=.env.data --sql "SELECT COUNT(*) AS CNT FROM <T>" --table <T>` | 300 数据 |
-| S3.6 | 验证包 | `node scripts/rfc_client.js --search "<PKG>" --type DEVC` | 200 开发 |
-| S5 | **部署** | `node scripts/deploy_rfc.js <程序名>` | 200 开发 |
-| S5.5 | 数据采样 | `node scripts/rfc_client.js --env=.env.data --rows=5 --sql "SELECT * FROM <T>" --table <T>` | 300 数据 |
-| S5.5 | **报表校验** | `node scripts/verify_report.js <程序名> P_xxx=<值> "S_xxx=低-高"` | 300 数据 |
+| S0 | 权限探测 | `node scripts/rfc_client.js --sql "SELECT COUNT(*) AS CNT FROM TADIR WHERE PGMID EQ 'R3TR'" --table TADIR` | 开发 |
+| S0 | ABAP 版本探测 | `node scripts/detect_abap_version.js` | 开发 |
+| S2 | 查对象存在 | `node scripts/rfc_client.js --search "<OBJNAME>"` | 开发 |
+| S3 | **拉 DDIC** | `node scripts/rfc_fetch_ddic.js --env=.env.data <T> output/<prog>/metadata/tables/` | 数据 |
+| S4 | 主表 COUNT | `node scripts/rfc_client.js --env=.env.data --sql "SELECT COUNT(*) AS CNT FROM <T>" --table <T>` | 数据 |
+| S8 | 验证包 | `node scripts/rfc_client.js --search "<PKG>" --type DEVC` | 开发 |
+| S10 | **部署** | `node scripts/deploy_report.js <程序名>`（按类型选脚本） | 开发 |
+| S11 | 数据采样 | `node scripts/rfc_client.js --env=.env.data --rows=5 --sql "SELECT * FROM <T>" --table <T>` | 数据 |
+| S11 | **报表校验** | `node scripts/verify_report.js <程序名> P_xxx=<值> "S_xxx=低-高"` | 数据 |
 
 ---
 
@@ -436,6 +435,8 @@ node scripts/rfc_client.js POST "/sap/bc/adt/datapreview/ddic?rowNumber=5&ddicEn
 | `--sql --table <T> 数据` | ✅ | ✅ | BKPF |
 | `rfc_fetch_ddic.js` | ✅ BKPF 122 | ✅ BSEG 353 | — |
 | `--source` | ✅ 1134 行 ABAP | — | ZSAP_FI086 |
-| `deploy_rfc.js` | ✅（依赖源码） | — | — |
+| `deploy_report.js` / `deploy_report_include.js` / `deploy_fugr.js` / `deploy_clas.js` / `deploy_intf.js` | ✅（依赖源码） | — | — |
+| `deploy_rfc.js`（兼容旧模板） | ✅（依赖源码） | — | — |
 | `verify_report.js` | ✅（依赖 FM） | ✅ | — |
 | `release_locks.js` | ✅ | — | — |
+
