@@ -134,7 +134,7 @@ Body:
 
 ## 参考代码
 
-见 `scripts/deploy_rfc.js` -- 完整示例，展示通过 `SADT_REST_RFC_ENDPOINT` 创建程序、上传源码、激活的完整流程。
+见 `scripts/deploy_report_include.js` / `scripts/deploy_report.js` — 完整示例，展示通过 `SADT_REST_RFC_ENDPOINT` 创建程序、上传源码、激活的完整流程。
 
 ## 故障排查速查表
 
@@ -159,7 +159,13 @@ scripts/
 ├── rfc_client.js                # 统一 RFC ADT 客户端（discovery/search/SQL/source）
 ├── rfc_fetch_ddic.js            # 单表 DDIC 元数据一键拉取
 ├── rfc_dual_check.js            # 双系统连通检测
-├── deploy_rfc.js                # 主部署脚本
+├── detect_abap_version.js       # 探测目标 SAP 系统 ABAP release
+├── deploy_report.js             # 部署 REPORT（单文件）
+├── deploy_report_include.js     # 部署 REPORT + INCLUDE（自动发现 INCLUDE）
+├── deploy_fugr.js               # 部署 FUGR + FM
+├── deploy_clas.js               # 部署 CLAS
+├── deploy_intf.js               # 部署 INTF
+├── deploy_rfc.js                # 兼容旧模板（固定 T01/SEL/F01/O01）
 ├── verify_report.js             # 通用报表真实数据校验
 ├── test_rfc.js                  # RFC 环境诊断
 ├── release_locks.js             # 释放所有锁（DEQUEUE_ALL）
@@ -208,16 +214,17 @@ scripts/
 | 脚本 | 场景 | 说明 |
 |------|------|------|
 | `rfc_client.js` | 所有 SAP 查询 | 统一入口：discovery/search/SQL/source |
-| `rfc_fetch_ddic.js` | 阶段 2 DDIC 元数据 | 一键拉取 + JSON 落盘 |
-| `rfc_dual_check.js` | 阶段 0 连通检测 | 双系统一键诊断 |
-| `verify_report.js` | 阶段 5.5 冒烟测试 | 多组参数并行，动态字段展示 |
+| `rfc_fetch_ddic.js` | S3 DDIC 元数据 | 一键拉取 + JSON 落盘 |
+| `rfc_dual_check.js` | S0 连通检测 | 双系统一键诊断 |
+| `detect_abap_version.js` | S0 ABAP 版本探测 | 决定 S9 可用语法 |
+| `verify_report.js` | S11 冒烟测试 | 多组参数并行，动态字段展示 |
 | `release_locks.js` | 应急释放锁 | 调用 DEQUEUE_ALL |
 
 ---
 
 ## INCLUDE 部署已知缺陷与根因记录
 
-> 记录时间：2026-04-27 | 影响范围：阶段 4–5
+> 记录时间：2026-04-27 | 影响范围：S9–S10
 
 ### 问题描述
 
@@ -233,9 +240,9 @@ RFC ADT API 中 `PROG/I` 类型的 URI 与 `PROG/P` 不同，直接混用会创�
 
 ### INCLUDE 正确部署方式
 
-使用 `scripts/deploy_rfc.js` 通过原生 RFC ADT API 逐对象部署：
-1. 阶段 4 生成分层源码（主程序 + T01/SEL/F01）
-2. 阶段 5 执行脚本：`node scripts/deploy_rfc.js <program>`
+使用 `scripts/deploy_report_include.js` 通过原生 RFC ADT API 逐对象部署：
+1. S9 生成分层源码（主程序 + T01/SEL/F01）
+2. S10 执行脚本：`node scripts/deploy_report_include.js <program>`
 3. 脚本自动创建 `PROG/P` 主程序和 `PROG/I` Include（`program:programType="I"`）
 4. 激活主程序时，系统自动处理其引用的 Include
 
@@ -253,7 +260,7 @@ RFC ADT API 中 `PROG/I` 类型的 URI 与 `PROG/P` 不同，直接混用会创�
 
 ## ZREPORT_EXEC_VERIFY 部署说明
 
-`ZREPORT_EXEC_VERIFY` 是阶段 5.5 冒烟测试的**核心前置依赖**——通过 `SUBMIT … WITH SELECTION-TABLE` 执行目标报表并用 `cl_salv_bs_runtime_info` 捕获 ALV 输出为 JSON。
+`ZREPORT_EXEC_VERIFY` 是 S11 冒烟测试的**核心前置依赖**——通过 `SUBMIT … WITH SELECTION-TABLE` 执行目标报表并用 `cl_salv_bs_runtime_info` 捕获 ALV 输出为 JSON。
 
 ### 代码位置
 
@@ -272,7 +279,7 @@ FM 完整源码：`docs/ZREPORT_EXEC_VERIFY.txt`
 
 ### 代理行为
 
-- 阶段 5.5 执行 `verify_report.js` 前，必须先验证 FM 在数据系统上存在
+- S11 执行 `verify_report.js` 前，必须先验证 FM 在数据系统上存在
 - 若 FM 不存在 → 提示用户部署（代码在 `docs/ZREPORT_EXEC_VERIFY.txt`）
 - **禁止**在 FM 未部署的情况下声称冒烟测试通过
 

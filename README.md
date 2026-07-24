@@ -1,4 +1,4 @@
-# SAP 报表自动化工作流（OpenCode Skill）
+﻿# SAP 报表自动化工作流（OpenCode Skill）
 
 端到端 SAP ABAP 开发对象自动化：从功能规格（FS）→ DDIC 元数据 → 技术文档 → 代码生成 → 激活 → 冒烟测试的 AI 驱动闭环。
 
@@ -59,12 +59,12 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 
 | 文件 | 用途 |
 |------|------|
-| `SKILL.md` | 主工作流定义（6 阶段 + 门禁 + 反模式自检） |
+| `SKILL.md` | 主工作流定义（S0–S11 共 12 阶段 + 门禁 + 反模式自检） |
 | `sap-operations-reference.md` | 全部 SAP 操作入参/出参实测手册 |
 | `abap-syntax-quickref.md` | ABAP 语法速查（ECC→S4HANA→Cloud） |
 | `troubleshooting.md` | 卡点速查（DDIC/部署/代码/连接） |
 | `reference.md` | ABAP 参考源 + 脚本库 |
-| `mcp-contract.md` | RFC ADT 端点 + rfc_client.js 手册 |
+| `rfc-adt-client-manual.md` | RFC ADT 端点 + rfc_client.js 手册 |
 
 ### 核心脚本（`scripts/`）
 
@@ -73,7 +73,13 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 | `rfc_client.js` | 统一 RFC ADT 客户端（discovery/search/SQL/source） | 每次会话 |
 | `rfc_fetch_ddic.js` | 单表 DDIC 元数据一键拉取 → JSON | 每张表 |
 | `rfc_dual_check.js` | 双系统连通检测 | 每次会话 |
-| `deploy_rfc.js` | 部署编排（创建→Lock→上传→语法检查→激活） | 每个程序 |
+| `detect_abap_version.js` | 探测目标 SAP 系统的 ABAP release | S0 |
+| `deploy_report.js` | 部署 REPORT（单文件） | 每个程序 |
+| `deploy_report_include.js` | 部署 REPORT + INCLUDE（自动发现 INCLUDE） | 每个程序 |
+| `deploy_fugr.js` | 部署 FUGR + FM | 每个函数组 |
+| `deploy_clas.js` | 部署 CLAS | 每个类 |
+| `deploy_intf.js` | 部署 INTF | 每个接口 |
+| `deploy_rfc.js` | 兼容旧模板（固定 T01/SEL/F01/O01） | 旧程序兼容 |
 | `verify_report.js` | 冒烟测试（执行报表 + 多参数比对） | 每个程序 |
 | `test_rfc.js` | RFC 环境诊断（DLL + node-rfc + 连接） | 首次/故障 |
 | `release_locks.js` | 应急释放 SAP 锁 | 按需 |
@@ -88,16 +94,16 @@ node scripts/rfc_dual_check.js # 双系统一键检测
 |------|------|------|
 | S0 | RFC 环境验证与连接 | `.env` / `.env.data` |
 | S1 | 功能规格规范化 | `spec/functional-spec-ai.md` |
-| S1.5 | 对象名确认与 SAP 存在性检查 | 确认的对象名清单 + `--search` 结果 |
-| S2 | 透明表 DDIC 元数据 | `metadata/tables/<T>.json` |
-| S2.1 | FS → DDIC 字段交叉验证 | `spec/fs-ddic-verification.md` |
-| S2.5 | 性能预估 | `docs/performance-estimate.md` |
-| S3 | 技术设计 | `docs/tech-design.md` |
-| S3.5 | FS 对齐审查 | `docs/fs-coverage.md` |
-| S3.6 | 部署配置 | `docs/deployment-config.md` |
-| S4 | 按类型生成代码 | `abap/*.abap` |
-| S5 | 部署与激活 | SAP 中已激活对象 |
-| S5.5 | 冒烟测试 | `output/<程序>/smoke-test.md` |
+| S2 | 对象名确认与 SAP 存在性检查 | 确认的对象名清单 + `--search` 结果 |
+| S3 | 透明表 DDIC 元数据 | `metadata/tables/<T>.json` |
+| S4 | FS → DDIC 字段交叉验证 | `spec/fs-ddic-verification.md` |
+| S5 | 性能预估 | `docs/performance-estimate.md` |
+| S6 | 技术设计 | `docs/tech-design.md` |
+| S7 | FS 对齐审查 | `docs/fs-coverage.md` |
+| S8 | 部署配置 | `docs/deployment-config.md` |
+| S9 | 按类型生成代码 | `abap/*.abap` |
+| S10 | 部署与激活 | SAP 中已激活对象 |
+| S11 | 冒烟测试 | `output/<程序>/smoke-test.md` |
 
 ### S0：RFC 环境验证与连接
 
@@ -107,7 +113,8 @@ node scripts/rfc_dual_check.js # 双系统一键检测
   - `.env`（开发系统配置）
   - `.env.data`（数据系统配置）
   - 连通验证结果
-  - `stage-gate.md`：`S0=permission-check: yes`
+  - ABAP 版本探测结果（`allowedSyntax`）
+  - `stage-gate.md`：`S0=connection-ok: yes`、`S0=permission-check: yes`、`S0=abap-version: yes`
 
 ### S1：功能规格规范化
 
@@ -117,103 +124,105 @@ node scripts/rfc_dual_check.js # 双系统一键检测
   - `spec/functional-spec-ai.md`（业务目标、选择屏幕、输出列、透明表、业务逻辑、约束）
   - `stage-gate.md`：`S1=functional-spec-ready: yes`
 
-### S1.5：对象名确认与 SAP 存在性检查
+### S2：对象名确认与 SAP 存在性检查
 
 - **描述**：确认最终对象名（如 `ZTEST109`）以及所有 Include/Function/Method 命名，并在 SAP 中检查是否已存在。
 - **作用**：防止覆盖已有对象或导致激活失败。若已存在，必须停止并请求用户确认。
 - **产物**：
   - 确认的对象名与类型清单
   - SAP `--search` 不存在记录
-  - `stage-gate.md`：`S1.5=object-name-confirmed: yes`
+  - `stage-gate.md`：`S2=object-name-confirmed: yes`
 
-### S2：透明表 DDIC 元数据
+### S3：透明表 DDIC 元数据
 
 - **描述**：从 SAP 数据系统拉取 FS 涉及的所有透明表（含 Z 表）的 DDIC 字段元数据，落盘为 JSON。
 - **作用**：消除代码生成阶段凭记忆写字段名、表名、类型的风险；后续所有 SQL、内表、ALV 列都基于这些元数据。
 - **产物**：
   - `output/<对象名>/metadata/tables/<TABNAME>.json`
-  - `stage-gate.md`：`S2=metadata-ready: yes`
+  - `stage-gate.md`：`S3=metadata-ready: yes`
 
-### S2.1：FS → DDIC 字段交叉验证
+### S4：FS → DDIC 字段交叉验证
 
 - **描述**：逐字段核对 `functional-spec-ai.md` 中引用的 `表.字段` 是否真实存在于 DDIC 元数据，并确认类型、长度、语义与 FS 一致。
 - **作用**：在写代码前发现并修正 FS 字段名错误、类型误解、字面值陷阱（如 `SPRAS` 用 `'1'` 而非 `'ZH'`）。
 - **产物**：
   - `spec/fs-ddic-verification.md`
   - 所有偏差项标注为 TBD 或已修正
-  - `stage-gate.md`：`S2.1=fs-ddic-verified: yes`
+  - `stage-gate.md`：`S4=fs-ddic-verified: yes`
 
-### S2.5：性能预估
+### S5：性能预估
 
 - **描述**：对主驱动表执行 `COUNT(*)`，按最严格条件估算数据量，决定输出方案（全量 ALV、分页、后台执行）。
 - **作用**：防止数据量爆炸导致报表卡死或超时；在写代码前就确定性能策略。
 - **产物**：
   - `docs/performance-estimate.md`
   - 数据量等级判定（全量 / 分页 / 后台）
-  - `stage-gate.md`：`S2.5=performance-estimate-ready: yes`
+  - `stage-gate.md`：`S5=performance-estimate-ready: yes`
 
-### S3：技术设计
+### S6：技术设计
 
 - **描述**：基于 FS 和 DDIC 元数据编写完整技术设计，包括字段契约、表关联路径、选择屏幕字段角色、取数逻辑、ALV 布局、性能设计。
 - **作用**：把业务需求翻译成代码实现方案，让所有 SQL 字段、JOIN 条件、计算列有源可追。
 - **产物**：
   - `docs/tech-design.md`（含字段契约、角色分析表、内表类型、ALV 设计）
   - `docs/template-mapping.md`（新对象与参考模板的对应关系）
-  - `stage-gate.md`：`S3=tech-design-ready: yes`
+  - `stage-gate.md`：`S6=tech-design-ready: yes`
 
-### S3.5：FS 对齐审查
+### S7：FS 对齐审查
 
 - **描述**：以表格形式逐行检查 FS 中的每个输出列、选择条件，是否已在 `tech-design.md` 字段契约和元数据中有映射，并标注代码落点。
 - **作用**：确保没有遗漏列、没有多余字段、每个业务逻辑项都有对应的代码实现位置。
 - **产物**：
   - `docs/fs-coverage.md`
-  - `stage-gate.md`：`S3.5=fs-coverage-ready: yes`
+  - `stage-gate.md`：`S7=fs-coverage-ready: yes`
 
-### S3.6：部署配置
+### S8：部署配置
 
 - **描述**：确认开发包、传输请求、参考模板选择，并写入固定格式的 `deployment-config.md`。
 - **作用**：让部署脚本能正确读取包名和传输请求，避免部署到错误环境或失败。
 - **产物**：
   - `docs/deployment-config.md`（固定表格格式）
-  - `stage-gate.md`：`S3.6=deployment-config-ready: yes`
+  - `stage-gate.md`：`S8=deployment-config-ready: yes`
 
-### S4：按类型生成代码
+### S9：按类型生成代码
 
 - **描述**：根据对象类型（REPORT/CLAS/INTF/FUGR）和参考模板生成 ABAP 源码，并强制通过反模式自检。
 - **作用**：产出可直接部署到 SAP 的代码，同时保证代码风格、语法、字段契约、模板结构一致。
 - **产物**：
   - `output/<对象名>/abap/<对象名>.abap`
   - 相关 Include/类/接口/FM 源文件
-  - `stage-gate.md`：`S4=code-generated: yes`
+  - `stage-gate.md`：`S9=code-generated: yes`
 
-### S5：部署与激活
+### S10：部署与激活
 
 - **描述**：按对象类型选择对应部署脚本，将源码上传到 SAP 开发系统，执行 Lock、上传、解锁、激活，并验证所有对象版本为 `active`。
 - **作用**：让代码在 SAP 中真正生效，可被执行和测试。
 - **产物**：
   - SAP 中已激活的 ABAP 对象
   - 部署脚本返回的 JSON 结果
-  - `stage-gate.md`：`S5=activated: yes`
+  - `stage-gate.md`：`S10=activated: yes`
 
-### S5.5：冒烟测试
+### S11：冒烟测试
 
 - **描述**：在数据系统中抽取真实数据，手工计算预期结果，与 `verify_report.js` 返回的报表输出进行逐字段比对，确保计算逻辑正确。
 - **作用**：验证代码逻辑在真实数据下正确，且输出字段与 FS 一致。不能仅凭程序能运行就通过。
 - **产物**：
   - `output/<对象名>/smoke-test.md`（含参数组合、手工计算过程、结果比对）
-  - `stage-gate.md`：`S5.5=smoke-test-passed: yes`
+  - `stage-gate.md`：`S11=smoke-test-passed: yes`
 
 ### 硬门禁
 
-- S0 未通过 → 禁止写代码或部署
-- S1 无 `functional-spec-ai.md` → 禁止写 ABAP
-- S2 无 metadata JSON → 禁止进入 S2.1
-- S2.1 有未修正的语义偏差 → 禁止进入 S3
-- S3 无 `tech-design.md` → 禁止进入 S4
-- S4 未完成反模式自检 → 禁止部署
-- S5.5 未通过真实数据验证 → 禁止标记通过
+- S0 未通过 → 禁止进入 S1
+- S1 无 `functional-spec-ai.md` → 禁止写 ABAP、禁止部署
+- S2 对象名未确认（或已存在未覆盖授权） → 禁止进入 S3
+- S3 无 metadata JSON 落盘 → 禁止进入 S4
+- S4 `fs-ddic-verification.md` 有未修正语义偏差 → 禁止进入 S6
+- S6 无 `tech-design.md`（含字段契约+选择屏幕角色分析） → 禁止进入 S9
+- S8 无 `deployment-config.md`（包/请求号/模板未明确） → 禁止进入 S10
+- S9 未完成反模式自检 → 禁止部署
+- S11 未通过真实数据验证 → 禁止标记通过
 
-建议每阶段门禁通过后执行 `git add + git commit`，格式：`[SAP-WF] 阶段X: 简述产物`。
+> 门禁通过后由用户决定是否 `git add + git commit`，格式建议：`[SAP-WF] 阶段X: 简述产物`。代理不自动执行 git 提交。
 
 ### 全阶段 SAP 命令速查
 
@@ -225,16 +234,28 @@ node scripts/rfc_dual_check.js
 # S0 — 权限探测
 node scripts/rfc_client.js --sql "SELECT COUNT(*) AS CNT FROM TADIR WHERE PGMID EQ 'R3TR'" --table TADIR
 
-# S1.5 — 查对象名
-node scripts/rfc_client.js --search "ZSAP_FI086"
+# S0 — ABAP 版本探测
+node scripts/detect_abap_version.js
 
-# S2 — 拉 DDIC 元数据
+# S2 — 查对象名
+node scripts/rfc_client.js --search "<对象名>"
+
+# S3 — 拉 DDIC 元数据
 node scripts/rfc_fetch_ddic.js --env=.env.data BKPF output/<prog>/metadata/tables/
 
-# S2.5 — 主表 COUNT
+# S4 — FS ↔ DDIC 验证（手工审查产物 spec/fs-ddic-verification.md）
+
+# S5 — 主表 COUNT / 性能预估
 node scripts/rfc_client.js --env=.env.data --sql "SELECT COUNT(*) AS CNT FROM <T>" --table <T>
 
-# S5 — 部署（按对象类型选择）
+# S6 — 技术设计（手工产物 docs/tech-design.md）
+
+# S7 — FS 对齐审查（手工产物 docs/fs-coverage.md）
+
+# S8 — 验证包
+node scripts/rfc_client.js --search "<包名>" --type DEVC
+
+# S10 — 部署（按对象类型选择）
 # REPORT + INCLUDE 分层
 node scripts/deploy_report_include.js <程序名>
 
@@ -253,10 +274,10 @@ node scripts/deploy_intf.js <接口名>
 # 兼容旧模板（固定 T01/SEL/F01/O01）
 node scripts/deploy_rfc.js <程序名>
 
-# S5.5 — 取数（DDIC 端点，完整 SELECT）
+# S11 — 取数（DDIC 端点，完整 SELECT）
 node scripts/fetch_table.js --table=FAGLFLEXT --where="RYEAR = '2026'" --fields=RYEAR,RACCT --rows=50
 
-# S5.5 — 冒烟测试
+# S11 — 冒烟测试
 node scripts/verify_report.js <程序名> P_BUKRS=6030 P_GJAHR=2025 "S_RPMAX=001-004"
 ```
 
@@ -282,14 +303,14 @@ ENDFUNCTION.
 output/<object>/
 ├── spec/                      # S1: 功能规格
 │   ├── functional-spec-ai.md
-│   └── fs-ddic-verification.md # S2.1
+│   └── fs-ddic-verification.md # S4
 ├── metadata/tables/           # S2: DDIC 元数据
 │   └── <TABNAME>.json
 ├── docs/                      # S3: 技术文档
 │   ├── tech-design.md         # 字段契约 + 关联 + WHERE
 │   ├── fs-coverage.md         # FS 字段→代码 逐项对齐
 │   ├── template-mapping.md    # INCLUDE 映射
-│   ├── performance-estimate.md # S2.5 性能预估
+│   ├── performance-estimate.md # S5 性能预估
 │   └── deployment-config.md   # 包/请求号/模板
 ├── abap/                      # S4: 源码
 │   ├── <name>.abap            # 主程序
@@ -298,7 +319,7 @@ output/<object>/
 │   ├── <name>F01.abap         # FORM 子程序
 │   └── ...
 ├── stage-gate.md              # 阶段门禁状态
-└── smoke-test.md              # S5.5 冒烟测试结果
+└── smoke-test.md              # S11 冒烟测试结果
 ```
 
 ## 已知限制
@@ -319,8 +340,9 @@ output/<object>/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **V3.1** | 2026-06-24 | S2.1 FS→DDIC 验证、选择屏幕文本运行时、冒烟测试标准化、fetch_table.js、GitHub 推送准则 |
+| **V3.1** | 2026-06-24 | S4 FS→DDIC 验证、选择屏幕文本运行时、冒烟测试标准化、fetch_table.js、GitHub 推送准则 |
 | V3.0 | 2026-06-24 | RFC ADT 直连架构：去除 MCP/代理中间层，统一走 node-rfc → SADT_REST_RFC_ENDPOINT |
 | V0.3 | 2026-06-10 | FM 创建流程（IMPORTING/EXPORTING/TABLES + RFC）；冒烟测试真实数据验证；配置去硬编码 |
 | V0.2 | 2026-06-09 | 冒烟测试方法论修正（先查源表→手工预期→跑程序→比对）；去敏感信息 |
 | V0.1 | 2026-04-27 | 初始版本：REPORT 全流程、双系统架构、RFC 代理模式 |
+
