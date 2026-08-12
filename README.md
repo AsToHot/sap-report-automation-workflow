@@ -1,4 +1,6 @@
-﻿# SAP 报表自动化工作流（OpenCode Skill）
+
+
+# SAP 报表自动化工作流（OpenCode Skill）
 
 端到端 SAP ABAP 开发对象自动化：从功能规格（FS）→ DDIC 元数据 → 技术文档 → 代码生成 → 激活 → 冒烟测试的 AI 驱动闭环。
 
@@ -304,7 +306,7 @@ output/<object>/
 ├── spec/                      # S1: 功能规格
 │   ├── functional-spec-ai.md
 │   └── fs-ddic-verification.md # S4
-├── metadata/tables/           # S2: DDIC 元数据
+├── metadata/tables/           # S3: DDIC 元数据
 │   └── <TABNAME>.json
 ├── docs/                      # S3: 技术文档
 │   ├── tech-design.md         # 字段契约 + 关联 + WHERE
@@ -345,4 +347,3 @@ output/<object>/
 | V0.3 | 2026-06-10 | FM 创建流程（IMPORTING/EXPORTING/TABLES + RFC）；冒烟测试真实数据验证；配置去硬编码 |
 | V0.2 | 2026-06-09 | 冒烟测试方法论修正（先查源表→手工预期→跑程序→比对）；去敏感信息 |
 | V0.1 | 2026-04-27 | 初始版本：REPORT 全流程、双系统架构、RFC 代理模式 |
-
